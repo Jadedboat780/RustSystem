@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bootloader = "0.9.23"
+bootloader = "0.9.23"   #реализует базовый BIOS-загрузчик без каких-либо C-зависимостей
 
 
 [profile.dev]
