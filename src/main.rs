@@ -5,11 +5,12 @@ mod vga_buffer;
 
 #[no_mangle]
 fn _start() ->! {
-    vga_buffer::print_something(b'H', "ello world");
+    println!("Hello\nWorld{}", 23);
     loop {}
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
