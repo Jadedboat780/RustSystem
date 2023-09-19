@@ -10,9 +10,13 @@ use oper_system::println;
 fn _start() -> ! {
     println!("Hello World");
 
+    oper_system::init();
+    x86_64::instructions::interrupts::int3();
+
     #[cfg(test)]
     test_main();
 
+    println!("End");
     loop {}
 }
 
