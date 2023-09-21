@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::panic::PanicInfo;
 use oper_system::{exit_qemu, serial_print, serial_println, QemuExitCode};
 
 #[no_mangle]
@@ -9,7 +8,7 @@ fn _start() -> ! {
     should_fail();
     serial_println!("[test did not panic]");
     exit_qemu(QemuExitCode::Failed);
-    loop{}
+    loop {}
 }
 
 fn should_fail() {
@@ -18,7 +17,7 @@ fn should_fail() {
 }
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(_info: &core::panic::PanicInfo) -> ! {
     serial_println!("[ok]");
     exit_qemu(QemuExitCode::Success);
     loop {}
