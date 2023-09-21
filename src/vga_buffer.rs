@@ -1,7 +1,7 @@
 use core::fmt;
 use lazy_static::lazy_static;
-use volatile::Volatile;
 use spin::Mutex;
+use volatile::Volatile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -138,25 +138,3 @@ pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
 }
-
-// #[test_case]
-// fn test_println_simple() {
-//     println!("test_println_simple output");
-// }
-//
-// #[test_case]
-// fn test_println_many() {
-//     for _ in 0..200 {
-//         println!("test_println_many output");
-//     }
-// }
-//
-// #[test_case]
-// fn test_println_output() {
-//     let s = "Some tests string that fits on a single line";
-//     println!("{}", s);
-//     for (i, c) in s.chars().enumerate() {
-//         let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-//         assert_eq!(char::from(screen_char.ascii_character), c);
-//     }
-// }
