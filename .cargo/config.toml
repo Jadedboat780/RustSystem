@@ -1,6 +1,6 @@
 [unstable]   #обращаемся к нестабильным функциям
 build-std-features = ["compiler-builtins-mem"]   #указывает на включение компиляторных встроенных функций для работы с памятью
-build-std = ["core", "compiler_builtins"]   #позволяет перекомпилировать core
+build-std = ["core", "compiler_builtins", "alloc"]   #позволяет перекомпилировать core
 
 [build]
 target = "x86_64-os.json"   #избавляемся от флага --target при запуске build

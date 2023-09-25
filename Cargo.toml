@@ -13,6 +13,7 @@ harness = false
 
 [dependencies]
 bootloader = { version = "0.9.23", features = ["map_physical_memory"]}    #реализует базовый BIOS-загрузчик без каких-либо C-зависимостей
+linked_list_allocator = "0.9.0"
 volatile = "0.2.6"    #предоставляет инструменты для безопасной работы с важными данными и регистрами аппаратуры
 x86_64 = "0.14.2"    #предоставляет инструменты и абстракции для работы с архитектурой x86_64
 uart_16550 = "0.2.0"    #ящик для инициализации UART и отправки данных через последовательный порт
@@ -26,8 +27,8 @@ spin = "0.5.2"    #реализует примиты для управления
 
 [profile.release]
 panic = "abort"
-#lto = true
-#codegen-units = 1
+lto = true
+codegen-units = 1
 
 [package.metadata.bootimage]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]    #допольнительные флаги для более удобного проецесса тестирования
