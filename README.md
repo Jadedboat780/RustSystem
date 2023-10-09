@@ -27,3 +27,5 @@ cargo bootimage
 * Cargo.toml -  зависимости проекта
 * rust-toolchain - указывает версию языка (ночную)
 * x86_64-os.json - инструкции для сборки системы
+## Для создания проекта использовался материал из:
+* [Writing an OS in Rust](https://os.phil-opp.com)
