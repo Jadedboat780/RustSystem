@@ -1,4 +1,5 @@
 use crate::{print, println, gdt, hlt_loop};
+use alloc::string::String;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 use pic8259::ChainedPics;
 use lazy_static::lazy_static;
@@ -70,34 +71,88 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
-    use x86_64::instructions::port::Port;
-    use spin::Mutex;
-
-    lazy_static! {
-        static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> = Mutex::new(
-            Keyboard::new(layouts::Us104Key, ScancodeSet1, HandleControl::Ignore)
-        );
+fn command(buffer: &str) {
+    match buffer {
+        "hello" => println!("\n\n  Hello world!\n  It's a rust OS\n"),
+        "help" => println!("\n\n    This is OS write on Rust lang\n    You are using version 1.0\n    At this point in time, this system does not know how to do anything\n"),
+        _ => println!(),
     }
+    print!(">>> ")
+}
 
-    let mut keyboard = KEYBOARD.lock();
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    use x86_64::instructions::port::Port;
+
+    static mut BUFFER: String = String::new();
     let mut port = Port::new(0x60);
-
     let scancode: u8 = unsafe { port.read() };
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key) => print!("{:?}", key),
-            }
+
+    let key: Option<char> = match scancode {
+        0x02 => Some('1'),
+        0x03 => Some('2'),
+        0x04 => Some('3'),
+        0x05 => Some('4'),
+        0x06 => Some('5'),
+        0x07 => Some('6'),
+        0x08 => Some('7'),
+        0x09 => Some('8'),
+        0x0a => Some('9'),
+        0x0b => Some('0'),
+        0x0C => Some('-'),
+        0x0D => Some('='),
+        0x10 => Some('q'),
+        0x11 => Some('w'),
+        0x12 => Some('e'),
+        0x13 => Some('r'),
+        0x14 => Some('t'),
+        0x15 => Some('y'),
+        0x16 => Some('u'),
+        0x17 => Some('i'),
+        0x18 => Some('o'),
+        0x19 => Some('p'),
+        0x9A => Some('['),
+        0x9B => Some(']'),
+        0x1C => Some('\n'),
+        0x1E => Some('a'),
+        0x1F => Some('s'),
+        0x20 => Some('d'),
+        0x21 => Some('f'),
+        0x22 => Some('g'),
+        0x23 => Some('h'),
+        0x24 => Some('j'),
+        0x25 => Some('k'),
+        0x26 => Some('l'),
+        0x2B => Some('\\'),
+        0x2C => Some('z'),
+        0x2D => Some('x'),
+        0x2E => Some('c'),
+        0x2F => Some('v'),
+        0x30 => Some('b'),
+        0x31 => Some('n'),
+        0x32 => Some('m'),
+        0x33 => Some(','),
+        0x34 => Some('.'),
+        0x35 => Some('/'),
+        0x37 => Some('*'),
+        _ => None,
+    };
+
+    match key {
+        Some('\n') => {
+            let buffer = unsafe { BUFFER.as_str() };
+            command(buffer);
+            unsafe { BUFFER.clear() }
         }
+        Some(char) => {
+            print!("{}", char);
+            unsafe { BUFFER.push(char) }
+        }
+        None => print!(""),
     }
 
     unsafe {

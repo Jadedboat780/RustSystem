@@ -6,8 +6,7 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, rc::Rc, vec::Vec};
-use oper_system::println;
+use oper_system::{print, println};
 use bootloader::{entry_point, BootInfo};
 
 entry_point!(kernel_main);
@@ -17,20 +16,18 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use oper_system::memory::{self, BootInfoFrameAllocator};
     use x86_64::{structures::paging::Page, VirtAddr};
 
-    println!("Hello World");
     oper_system::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
-    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
-
-    let a = Box::new(12);
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
 
     #[cfg(test)]
     test_main();
 
+    print!(">>> ");
     oper_system::hlt_loop();
 }
 
