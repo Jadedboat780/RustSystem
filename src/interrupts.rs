@@ -80,6 +80,7 @@ fn command(buffer: &str) {
     match buffer {
         "hello" => println!("\n\n  Hello world!\n  It's a rust OS\n"),
         "help" => println!("\n\n    This is OS write on Rust lang\n    You are using version 1.0\n    At this point in time, this system does not know how to do anything\n"),
+        "version" => println!("\n\n    0.0.1\n"),
         _ => println!(),
     }
     print!(">>> ")
@@ -156,8 +157,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     }
 
     unsafe {
-        PICS.lock()
-            .notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
 }
 
