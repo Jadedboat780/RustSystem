@@ -1,15 +1,14 @@
+use core::cell::UnsafeCell;
+use core::fmt;
+use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{
     AtomicBool,
     Ordering::{Acquire, Release},
 };
-use core::cell::UnsafeCell;
-use core::fmt;
-use core::ops::{Deref, DerefMut};
-
 
 pub struct SpinLock<T> {
     locked: AtomicBool,
-    value: UnsafeCell<T>,   //предоставление изменяемости объекта
+    value: UnsafeCell<T>, //предоставление изменяемости объекта
 }
 
 impl<T> SpinLock<T> {
@@ -17,7 +16,7 @@ impl<T> SpinLock<T> {
     pub const fn new(value: T) -> Self {
         Self {
             locked: AtomicBool::new(false),
-            value: UnsafeCell::new(value),      //необходимо для внутренней изменивости
+            value: UnsafeCell::new(value), //необходимо для внутренней изменивости
         }
     }
 
