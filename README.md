@@ -4,6 +4,7 @@
 
 Запуск происходит с помощью эмулятора QEMU. Перед запуском необходимо выполнить команды:
 ```commandline
+rustup component add llvm-tools-preview
 cargo install bootimage
 cargo bootimage
 ```
@@ -18,13 +19,18 @@ cargo bootimage
 ## Структура проекта:
 * .cargo - папка с конфигурационными данными 
 * src - папка с кодом ядра
+  * custom_types - папка с кастомными обёртками и типами
+    * channel.rs - реализация канала(ещё очень сырая, не предназначена для использования)
+    * list.rs - реализация односвязного списка(ещё очень сырая, не предназначена для использования)
+    * spinlock.rs - реализация спинлока
   * lib.rs - реализует вспомогательные функции
   * main.rs - сборка проекта
   * allocator.rs - реализует аллокатор, чтобы работать с динамической памятью
+  * channel.rs - реализация каналов
   * gdt.rs - содержит отдельный стек двойных ошибок в таблице стека прерываний
   * interrupts.rs - реализация стека прерываний
   * memory.rs - реализует управление физической памятью и создание отображений страниц виртуальной памяти на физическую память
-  * serial.rs - реализация Serial Port
+  * serial.rs - реализация последовательного порта (необходимо для тестов)
   * vga_buffer.rs - реализация минимального VGA буфера
   * spin_lock.rs - реализация простой обёртки для монопольного доступа к данным
 * test - папка с тестами
@@ -38,3 +44,5 @@ cargo bootimage
 ## Для создания проекта использовался материал из:
 * [Writing an OS in Rust](https://os.phil-opp.com)
 * [Rust Atomics and Locks](https://marabos.nl/atomics/)
+* [Rust Design Patterns](https://rust-unofficial.github.io/patterns/intro.html)
+* [Learn Rust With Entirely Too Many Linked Lists](https://rust-unofficial.github.io/too-many-lists/index.html)
