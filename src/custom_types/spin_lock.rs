@@ -1,10 +1,10 @@
 use core::cell::UnsafeCell;
-use core::fmt;
-use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{
     AtomicBool,
     Ordering::{Acquire, Release},
 };
+use core::fmt;
+use core::ops::{Deref, DerefMut};
 
 pub struct SpinLock<T> {
     locked: AtomicBool,
@@ -28,14 +28,14 @@ impl<T> SpinLock<T> {
         Guard { lock: self }
     }
 
-    //разблокировка объекта
+    //разблокировка объекта(предназначена лишь для вызова диструктором)
     unsafe fn unlock(&self) {
         self.locked.store(false, Release);
     }
 
     //проверяем, заблокирован ли объект
-    pub fn is_locked(&self) -> &AtomicBool {
-        &self.locked
+    pub fn is_locked(&self) -> bool {
+        self.locked.load(Acquire)
     }
 }
 
@@ -84,6 +84,30 @@ impl<T> DerefMut for Guard<'_, T> {
 //реализация диструктора
 impl<T> Drop for Guard<'_, T> {
     fn drop(&mut self) {
-        self.lock.locked.store(false, Release);
+        unsafe { self.lock.unlock() }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test_case]
+    fn test_lock() {
+        let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
+        assert_eq!(array.is_locked(), false);
+
+        let lock_array = array.lock();
+        assert!(array.is_locked())
+    }
+
+    #[test_case]
+    fn test_unlock() {
+        let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
+        let lock_array = array.lock();
+        assert!(array.is_locked());
+
+        drop(lock_array);
+        assert_eq!(array.is_locked(), false);
     }
 }
