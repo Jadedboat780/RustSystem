@@ -2,34 +2,34 @@
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
+#![feature(const_mut_refs)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
 
 pub mod allocator;
-pub mod interrupts;
 pub mod gdt;
+pub mod interrupts;
 pub mod memory;
 pub mod serial;
-pub mod vga_buffer;
-
+pub mod custom_types;
+pub mod vga;
 
 pub fn init() {
-    gdt::init();
-    interrupts::init_idt();
-    unsafe { interrupts::PICS.lock().initialize() };
-    x86_64::instructions::interrupts::enable();
+    gdt::init(); // включение двойных ошибок цп
+    interrupts::init_idt(); // инициализация исключений ЦП
+    unsafe { interrupts::PICS.lock().initialize() }; // инициализации PIC
+    x86_64::instructions::interrupts::enable(); // включение внешних прерываний
 }
 
+// интерфейс для запуска тестовов
 pub trait Testable {
     fn run(&self) -> ();
 }
 
-impl<T> Testable for T
-    where
-        T: Fn(),
-{
+impl<T: Fn()> Testable for T {
+    // запуск тестов (функции помеченные #[cfg(test)])
     fn run(&self) {
         serial_print!("{}...\t", core::any::type_name::<T>());
         self();
@@ -37,6 +37,7 @@ impl<T> Testable for T
     }
 }
 
+// принимает срез, который состоит из всех тестов, и запускает их
 pub fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
@@ -45,6 +46,7 @@ pub fn test_runner(tests: &[&dyn Testable]) {
     exit_qemu(QemuExitCode::Success);
 }
 
+// обработка паники для тестов
 pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error: {}\n", info);
@@ -52,6 +54,7 @@ pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
     hlt_loop();
 }
 
+// перечисление кодов завершения для QEMU
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QemuExitCode {
@@ -59,6 +62,7 @@ pub enum QemuExitCode {
     Failed = 0x11,
 }
 
+// отправка информации в порт о коде завершения
 pub fn exit_qemu(exit_code: QemuExitCode) {
     use x86_64::instructions::port::Port;
 
@@ -68,11 +72,14 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
     }
 }
 
+// позволяет процессору перейти в состояние сна в ожидании следующего прерывания
 pub fn hlt_loop() -> ! {
     loop {
-        x86_64::instructions::hlt();     //позволяет процессору перейти в состояние сна, в котором он потребляет гораздо меньше энергии, чем в обычном oop
+        x86_64::instructions::hlt();
     }
 }
+
+// ниже идёт реализация тестов
 
 #[cfg(test)]
 use bootloader::{entry_point, BootInfo};
