@@ -8,11 +8,6 @@ const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048]; // р
 pub const HEAP_START: usize = 0x_4444_4444_0000; // начальный адрес для выделения памяти под кучу
 pub const HEAP_SIZE: usize = 100 * 1024; // размер кучи в байтах (100 килабойт)
 
-// выравнивает адрес (addr) вверх по указанному значению выравнивания (align)
-fn align_up(addr: usize, align: usize) -> usize {
-    (addr + align - 1) & !(align - 1)
-}
-
 // возвращает минимально возможный размер блока для заданного Layout
 fn list_index(layout: &Layout) -> Option<usize> {
     let required_block_size = layout.size().max(layout.align());

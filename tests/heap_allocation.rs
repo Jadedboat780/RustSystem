@@ -7,8 +7,8 @@
 extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
-use oper_system::allocator::HEAP_SIZE;
 use bootloader::{entry_point, BootInfo};
+use oper_system::allocator::HEAP_SIZE;
 
 entry_point!(main);
 

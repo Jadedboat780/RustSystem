@@ -1,16 +1,19 @@
-use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
-    structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB,
-    },
+    structures::paging::{FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB},
     PhysAddr, VirtAddr,
 };
+use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 
+// инициализация структуры для работы с отображёнными страницами памяти
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
     let level_4_table = active_level_4_table(physical_memory_offset);
     OffsetPageTable::new(level_4_table, physical_memory_offset)
 }
 
+/* Возвращает изменяемую ссылку на активную таблицу уровня 4.
+   Вызывающая сторона должна гарантировать,
+   что вся физическая память отображается в виртуальную память с переданным `physical_memory_offset`
+   Функцию следует вызывать только один раз */
 unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable {
     use x86_64::registers::control::Cr3;
 
@@ -20,9 +23,10 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
     let virt = physical_memory_offset + phys.as_u64();
     let page_table_ptr: *mut PageTable = virt.as_mut_ptr();
 
-    &mut *page_table_ptr // unsafe
+    &mut *page_table_ptr
 }
 
+// создаёт отображение страницы на адрес 0xb8000
 pub fn create_example_mapping(
     page: Page,
     mapper: &mut OffsetPageTable,
@@ -34,47 +38,55 @@ pub fn create_example_mapping(
     let flags = Flags::PRESENT | Flags::WRITABLE;
 
     let map_to_result = unsafe {
-        // FIXME: this is not safe, we do it only for testing
         mapper.map_to(page, frame, flags, frame_allocator)
     };
     map_to_result.expect("map_to failed").flush();
 }
 
+// структура для представления пустого фрейма аллокатора
 pub struct EmptyFrameAllocator;
 
 unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
+    // необходимо для ситуаций, когда система еще не готова выделять физическую память
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         None
     }
 }
 
+// структура для представления фреймов аллокатора,
+// пригодных для использования кадров из карты памяти загрузчика
 pub struct BootInfoFrameAllocator {
-    memory_map: &'static MemoryMap,
-    next: usize,
+    memory_map: &'static MemoryMap,   // ссылка на карту памяти
+    next: usize    // номер следующего кадра
 }
 
 impl BootInfoFrameAllocator {
-    pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
+    /* Создание фрейма аллокатора из переданной карты памяти.
+       Вызывающая сторона должна гарантировать, что переданная
+       карта памяти действительна */
+    pub fn init(memory_map: &'static MemoryMap) -> Self {
         BootInfoFrameAllocator {
             memory_map,
             next: 0,
         }
     }
 
+    // возвращает итератор по доступным кадрам, указанным в карте памяти
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
-        // get usable regions from memory map
+        // получить полезные области из карты памяти
         let regions = self.memory_map.iter();
         let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
-        // map each region to its address range
+        // сопоставить каждый регион с его диапазоном адресов
         let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
-        // transform to an iterator of frame start addresses
+        // преобразовать в итератор начальных адресов кадр
         let frame_addresses = addr_ranges.flat_map(|r| r.step_by(4096));
-        // create `PhysFrame` types from the start addresses
+
         frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
     }
 }
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
+    // возвращает следующий доступный кадр
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         let frame = self.usable_frames().nth(self.next);
         self.next += 1;

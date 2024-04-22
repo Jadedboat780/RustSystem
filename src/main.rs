@@ -6,31 +6,41 @@
 
 extern crate alloc;
 
-use oper_system::{print, println};
 use bootloader::{entry_point, BootInfo};
+use oper_system::{
+    print, println,
+    vga_buffer::start_message,
+};
 
+// определяем точку входа
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use oper_system::allocator;
-    use oper_system::memory::{self, BootInfoFrameAllocator};
-    use x86_64::{structures::paging::Page, VirtAddr};
+    use oper_system::memory;
+    use x86_64::VirtAddr;
 
     oper_system::init();
 
+    // инициализация маппера страниц и аллокатор кадров
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    let mut frame_allocator =  memory::BootInfoFrameAllocator::init(&boot_info.memory_map);
 
+    // инициализация кучи
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
 
     #[cfg(test)]
     test_main();
 
-    print!(">>> ");
+    // вывод стартового сообщения
+    start_message();
+    print!("<<< ");
+
     oper_system::hlt_loop();
 }
 
+// обработчик паники для системы
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
@@ -38,6 +48,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     oper_system::hlt_loop();
 }
 
+// обработчик паники для тестов
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {

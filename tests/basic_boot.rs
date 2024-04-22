@@ -17,7 +17,6 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     oper_system::test_panic_handler(info)
 }
 
-
 #[test_case]
 fn test_println_many() {
     for num in 0..=100 {

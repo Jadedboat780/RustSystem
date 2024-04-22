@@ -1,9 +1,9 @@
-[unstable]   #обращаемся к нестабильным функциям
-build-std-features = ["compiler-builtins-mem"]   #указывает на включение компиляторных встроенных функций для работы с памятью
-build-std = ["core", "compiler_builtins", "alloc"]   #позволяет перекомпилировать core
+[unstable]    # обращаемся к нестабильным функциям
+build-std = ["core", "compiler_builtins", "alloc"]    # позволяет перекомпилировать библиотеки core, compiler_builtins и alloc
+build-std-features = ["compiler-builtins-mem"]    # указывает на включение компиляторных встроенных функций для работы с памятью
 
 [build]
-target = "x86_64-os.json"   #избавляемся от флага --target при запуске build
+target = "x86_64-os.json"    # добавляет конфигурационный файл при сборке
 
 [target.'cfg(target_os = "none")']
-runner = "bootimage runner"   #добавляес флаг при запуске run
+runner = "bootimage runner"    # создание образа загрузчика для ядра ос

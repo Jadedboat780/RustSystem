@@ -14,7 +14,7 @@ pub mod interrupts;
 pub mod memory;
 pub mod serial;
 pub mod custom_types;
-pub mod vga;
+pub mod vga_buffer;
 
 pub fn init() {
     gdt::init(); // включение двойных ошибок цп
@@ -25,7 +25,7 @@ pub fn init() {
 
 // интерфейс для запуска тестовов
 pub trait Testable {
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
 impl<T: Fn()> Testable for T {
