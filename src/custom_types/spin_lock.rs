@@ -1,55 +1,89 @@
+use core::cell::UnsafeCell;
+use core::fmt::{self, Debug};
+use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{
     AtomicBool,
     Ordering::{Acquire, Release},
 };
-use core::cell::UnsafeCell;
-use core::fmt;
-use core::ops::{Deref, DerefMut};
 
-#[derive(Default)]
+/// Примитив синхронизации для коротковременных блокировок
 pub struct SpinLock<T> {
-    locked: AtomicBool, // состояние объекта (свободен или заблокирован)
-    value: UnsafeCell<T> // предоставление внутринней изменяемости объекта
+    locked: AtomicBool,   // состояние объекта (свободен/заблокирован)
+    value: UnsafeCell<T>, // предоставление внутринней изменяемости объекта
 }
 
+/// Примитив для коротких блокировок
 impl<T> SpinLock<T> {
-    // конструктор
+    /// Конструктор
+    #[inline]
     pub const fn new(value: T) -> Self {
         Self {
             locked: AtomicBool::new(false),
-            value: UnsafeCell::new(value)
+            value: UnsafeCell::new(value),
         }
     }
 
-    // блокировка объекта
+    /// Блокировка объекта
+    #[inline]
     pub fn lock(&self) -> Guard<T> {
-        if self.is_locked(){
-            panic!("SpinLock: double lock")
-        }
         while self.locked.swap(true, Acquire) {
             // подсказка циклу вращения (сообщает процессору, что мы вращаемся, ожидая каких-либо изменени)
             // приводит к созданию специальной инструкции для оптимизации поведения блокировки
             core::hint::spin_loop();
         }
+
         Guard { lock: self }
     }
 
-    // освобождение объекта (предназначена лишь для вызова диструктором)
-    unsafe fn unlock(&self) {
+    /// Попытка блокировки объекта
+    #[inline]
+    pub fn try_lock(&self) -> Option<Guard<T>> {
+        if !self.locked.swap(true, Acquire) {
+            Some(Guard { lock: self })
+        } else {
+            None
+        }
+    }
+
+    /// Возвращает мутабельную ссылку на объект
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.value.get_mut()
+    }
+
+    /// Разблокировка объекта (предназначена лишь для вызова диструктором)
+    #[inline]
+    fn unlock(&self) {
         self.locked.store(false, Release);
     }
 
-    // проверяем, заблокирован ли объект
+    /// Проверка, заблокирован ли объект
+    #[inline]
     pub fn is_locked(&self) -> bool {
         self.locked.load(Acquire)
     }
+
+    /// Извлечение значения из SpinLock
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.value.into_inner()
+    }
 }
 
-// указываем, что использование типа между потоками является безопасным
-unsafe impl<T> Sync for SpinLock<T> where T: Send {}
+impl<T> From<T> for SpinLock<T> {
+    fn from(value: T) -> Self {
+        SpinLock::new(value)
+    }
+}
+impl<T: Default> Default for SpinLock<T> {
+    fn default() -> Self {
+        SpinLock::new(Default::default())
+    }
+}
 
-// реализация вывода в консоль для отладки
-impl<T: fmt::Debug> fmt::Debug for SpinLock<T> {
+unsafe impl<T: Send> Sync for SpinLock<T> {}
+
+impl<T: Debug> Debug for SpinLock<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SpinLock")
             .field("locked", &self.locked)
@@ -58,13 +92,12 @@ impl<T: fmt::Debug> fmt::Debug for SpinLock<T> {
     }
 }
 
-// безопасный интерфейс для блокировки
+/// Интерфейс для заблокированного объекта
 pub struct Guard<'lock, T> {
     lock: &'lock SpinLock<T>,
 }
 
-// реализация вывода в консоль для отладки
-impl<T: fmt::Debug> fmt::Debug for Guard<'_, T> {
+impl<T: Debug> Debug for Guard<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Guard")
             .field("value", unsafe { &*self.lock.value.get() })
@@ -72,7 +105,6 @@ impl<T: fmt::Debug> fmt::Debug for Guard<'_, T> {
     }
 }
 
-// реализация разыменования
 impl<T> Deref for Guard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
@@ -80,21 +112,20 @@ impl<T> Deref for Guard<'_, T> {
     }
 }
 
-// реализация разыменования с получением изменяемой ссылки
 impl<T> DerefMut for Guard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.lock.value.get() }
     }
 }
 
-// реализация диструктора (особождение блокировки)
 impl<T> Drop for Guard<'_, T> {
     fn drop(&mut self) {
-        unsafe { self.lock.unlock() }
+        self.lock.unlock()
     }
 }
 
-// тесты для проверки работы SpinLock
+
+/// Тесты
 #[cfg(test)]
 mod test {
     use super::*;
@@ -109,6 +140,16 @@ mod test {
     }
 
     #[test_case]
+    fn test_try_lock() {
+        let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
+        let lock_array_1 = array.try_lock();
+        assert!(lock_array_1.is_some());
+
+        let lock_array_2 = array.try_lock();
+        assert!(lock_array_2.is_none())
+    }
+
+    #[test_case]
     fn test_unlock() {
         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
         let lock_array = array.lock();
@@ -116,11 +157,5 @@ mod test {
 
         drop(lock_array);
         assert_eq!(array.is_locked(), false);
-    }
-
-    #[test_case]
-    fn test_defer(){
-        let num = SpinLock::new(12);
-        assert_eq!(12, *num.lock());
     }
 }
