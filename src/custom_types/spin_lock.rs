@@ -12,7 +12,6 @@ pub struct SpinLock<T> {
     value: UnsafeCell<T>, // предоставление внутринней изменяемости объекта
 }
 
-/// Примитив для коротких блокировок
 impl<T> SpinLock<T> {
     /// Конструктор
     #[inline]
