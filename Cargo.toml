@@ -1,7 +1,7 @@
 [package]
-name = "oper_system"
+name = "rust-system"
 version = "0.0.1"
-edition = "2021"
+edition = "2024"
 
 [[test]]    #настраиваем тестовый сценарий для паники
 name = "should_panic"

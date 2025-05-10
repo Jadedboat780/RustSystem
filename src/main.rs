@@ -1,13 +1,13 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(oper_system::test_runner)]
+#![test_runner(rust_system::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
 
 use bootloader::{entry_point, BootInfo};
-use oper_system::{
+use rust_system::{
     print, println,
     vga_buffer::start_message,
 };
@@ -16,11 +16,11 @@ use oper_system::{
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
-    use oper_system::allocator;
-    use oper_system::memory;
+    use rust_system::allocator;
+    use rust_system::memory;
     use x86_64::VirtAddr;
 
-    oper_system::init();
+    rust_system::init();
 
     // инициализация маппера страниц и аллокатор кадров
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
@@ -37,7 +37,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     start_message();
     print!("<<< ");
 
-    oper_system::hlt_loop();
+    rust_system::hlt_loop();
 }
 
 // обработчик паники для системы
@@ -45,12 +45,12 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);
-    oper_system::hlt_loop();
+    rust_system::hlt_loop();
 }
 
 // обработчик паники для тестов
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    oper_system::test_panic_handler(info);
+    rust_system::test_panic_handler(info);
 }
