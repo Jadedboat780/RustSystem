@@ -1,6 +1,6 @@
-use uart_16550::SerialPort;
-use lazy_static::lazy_static;
 use super::custom_types::spin_lock::SpinLock;
+use lazy_static::lazy_static;
+use uart_16550::SerialPort;
 
 // объект последовательного порта
 lazy_static! {

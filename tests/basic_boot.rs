@@ -1,12 +1,12 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(oper_system::test_runner)]
+#![test_runner(rust_system::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use oper_system::println;
+use rust_system::println;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn _start() -> ! {
     test_main();
     loop {}
@@ -14,7 +14,7 @@ fn _start() -> ! {
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    oper_system::test_panic_handler(info)
+    rust_system::test_panic_handler(info)
 }
 
 #[test_case]

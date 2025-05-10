@@ -123,7 +123,6 @@ impl<T> Drop for Guard<'_, T> {
     }
 }
 
-
 /// Тесты
 #[cfg(test)]
 mod test {
@@ -132,9 +131,9 @@ mod test {
     #[test_case]
     fn test_lock() {
         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
-        assert_eq!(array.is_locked(), false);
+        assert!(!array.is_locked());
 
-        let lock_array = array.lock();
+        let _lock_array = array.lock();
         assert!(array.is_locked())
     }
 
@@ -155,6 +154,6 @@ mod test {
         assert!(array.is_locked());
 
         drop(lock_array);
-        assert_eq!(array.is_locked(), false);
+        assert!(!array.is_locked());
     }
 }

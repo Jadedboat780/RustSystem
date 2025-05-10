@@ -1,26 +1,26 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(oper_system::test_runner)]
+#![test_runner(rust_system::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
-use bootloader::{entry_point, BootInfo};
-use oper_system::allocator::HEAP_SIZE;
+use bootloader::{BootInfo, entry_point};
+use rust_system::allocator::HEAP_SIZE;
 
 entry_point!(main);
 
 fn main(boot_info: &'static BootInfo) -> ! {
-    use oper_system::allocator;
-    use oper_system::memory::{self, BootInfoFrameAllocator};
+    use rust_system::allocator;
+    use rust_system::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
-    oper_system::init();
+    rust_system::init();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    let mut frame_allocator = BootInfoFrameAllocator::init(&boot_info.memory_map);
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
     test_main();
@@ -55,5 +55,5 @@ fn many_boxes() {
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    oper_system::test_panic_handler(info)
+    rust_system::test_panic_handler(info)
 }

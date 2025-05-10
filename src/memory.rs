@@ -1,20 +1,24 @@
-use x86_64::{
-    structures::paging::{FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB},
-    PhysAddr, VirtAddr,
-};
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
+use x86_64::{
+    PhysAddr, VirtAddr,
+    structures::paging::{
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB,
+    },
+};
 
 // инициализация структуры для работы с отображёнными страницами памяти
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
-    let level_4_table = active_level_4_table(physical_memory_offset);
-    OffsetPageTable::new(level_4_table, physical_memory_offset)
+    unsafe {
+        let level_4_table = active_level_4_table(physical_memory_offset);
+        OffsetPageTable::new(level_4_table, physical_memory_offset)
+    }
 }
 
 /* Возвращает изменяемую ссылку на активную таблицу уровня 4.
-   Вызывающая сторона должна гарантировать,
-   что вся физическая память отображается в виртуальную память с переданным `physical_memory_offset`
-   Функцию следует вызывать только один раз */
-unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable {
+Вызывающая сторона должна гарантировать,
+что вся физическая память отображается в виртуальную память с переданным `physical_memory_offset`
+Функцию следует вызывать только один раз */
+unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable { unsafe {
     use x86_64::registers::control::Cr3;
 
     let (level_4_table_frame, _) = Cr3::read();
@@ -24,7 +28,7 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
     let page_table_ptr: *mut PageTable = virt.as_mut_ptr();
 
     &mut *page_table_ptr
-}
+}}
 
 // создаёт отображение страницы на адрес 0xb8000
 pub fn create_example_mapping(
@@ -37,9 +41,7 @@ pub fn create_example_mapping(
     let frame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
     let flags = Flags::PRESENT | Flags::WRITABLE;
 
-    let map_to_result = unsafe {
-        mapper.map_to(page, frame, flags, frame_allocator)
-    };
+    let map_to_result = unsafe { mapper.map_to(page, frame, flags, frame_allocator) };
     map_to_result.expect("map_to failed").flush();
 }
 
@@ -56,14 +58,14 @@ unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
 // структура для представления фреймов аллокатора,
 // пригодных для использования кадров из карты памяти загрузчика
 pub struct BootInfoFrameAllocator {
-    memory_map: &'static MemoryMap,   // ссылка на карту памяти
-    next: usize    // номер следующего кадра
+    memory_map: &'static MemoryMap, // ссылка на карту памяти
+    next: usize,                    // номер следующего кадра
 }
 
 impl BootInfoFrameAllocator {
     /* Создание фрейма аллокатора из переданной карты памяти.
-       Вызывающая сторона должна гарантировать, что переданная
-       карта памяти действительна */
+    Вызывающая сторона должна гарантировать, что переданная
+    карта памяти действительна */
     pub fn init(memory_map: &'static MemoryMap) -> Self {
         BootInfoFrameAllocator {
             memory_map,

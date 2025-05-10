@@ -1,11 +1,8 @@
+use super::{WRITER, colors::Color};
 use crate::custom_types::spin_lock::SpinLock;
-use alloc::string::{String};
-use alloc::vec::Vec;
 use crate::{print, println};
-use super::{
-    colors::Color,
-    WRITER
-};
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::mem;
 
 static BUFFER_LINE: SpinLock<String> = SpinLock::new(String::new());
@@ -26,7 +23,10 @@ fn command() {
             println!("           **    **  ********  ********  ********    **    **");
             println!("          **    **  ********  ********  ********       **\n");
         }
-        "help" => println!("\tThis is OS write on Rust lang\n\tYou are using version {}\n\tAt this point in time, this system does not know how to do anything", env!("CARGO_PKG_VERSION")),
+        "help" => println!(
+            "\tThis is OS write on Rust lang\n\tYou are using version {}\n\tAt this point in time, this system does not know how to do anything",
+            env!("CARGO_PKG_VERSION")
+        ),
         "version" => println!("\tActual version: {}", env!("CARGO_PKG_VERSION")),
         "" => (),
         command => println!("Command not found: {}", command),
@@ -40,7 +40,7 @@ fn command() {
 
 #[inline]
 pub fn keyboard(scancode: u8) {
-    let lower_char = |scancode: u8| -> Option<char>{
+    let lower_char = |scancode: u8| -> Option<char> {
         match scancode {
             0x01 => panic!("GOODBYE"), //escape
             0x02 => Some('1'),
@@ -98,10 +98,10 @@ pub fn keyboard(scancode: u8) {
             0x48 => {
                 // arrow_click();
                 None
-            }  //up
-            0x4B => Some('%'),  //left
-            0x4D => Some('%'),  //right
-            0x50 => Some('|'),  //down
+            } //up
+            0x4B => Some('%'), //left
+            0x4D => Some('%'), //right
+            0x50 => Some('|'), //down
             _ => None,
         }
     };
@@ -113,7 +113,7 @@ pub fn keyboard(scancode: u8) {
         Some('#') => {
             WRITER.lock().delete_char();
             let del_chat = BUFFER_LINE.lock().pop().unwrap();
-            if del_chat == '\''{
+            if del_chat == '\'' {
                 // WRITER.lock().set_color_code()
             }
         }

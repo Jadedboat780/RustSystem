@@ -8,11 +8,11 @@
 extern crate alloc;
 
 pub mod allocator;
+pub mod custom_types;
 pub mod gdt;
 pub mod interrupts;
 pub mod memory;
 pub mod serial;
-pub mod custom_types;
 pub mod vga_buffer;
 
 pub fn init() {
@@ -81,7 +81,7 @@ pub fn hlt_loop() -> ! {
 // ниже идёт реализация тестов
 
 #[cfg(test)]
-use bootloader::{entry_point, BootInfo};
+use bootloader::{BootInfo, entry_point};
 
 #[cfg(test)]
 entry_point!(test_kernel_main);

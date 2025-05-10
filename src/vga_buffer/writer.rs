@@ -1,6 +1,6 @@
+use super::buffer::{BUFFER_HEIGHT, BUFFER_WIDTH, Buffer, ScreenChar};
+use super::colors::{Color, ColorCode};
 use core::fmt;
-use super::buffer::{ScreenChar, Buffer, BUFFER_HEIGHT, BUFFER_WIDTH};
-use super::colors::{ColorCode, Color};
 
 // структура для отслеживание состояния консоли
 struct Condition {
@@ -9,15 +9,17 @@ struct Condition {
 
 //структура для представления Писателя
 pub struct Writer {
-    column_position: usize, // текущая позицию в столбце
-    color_code: ColorCode, //
+    column_position: usize,      // текущая позицию в столбце
+    color_code: ColorCode,       //
     buffer: &'static mut Buffer, //
-    condition: Condition // состояние консоли
+    condition: Condition,        // состояние консоли
 }
 
 impl Writer {
     pub fn new(column_position: usize, color_code: ColorCode, buffer: &'static mut Buffer) -> Self {
-        let condition = Condition { is_quotes_open: false };
+        let condition = Condition {
+            is_quotes_open: false,
+        };
         Self {
             column_position,
             color_code,
@@ -26,9 +28,15 @@ impl Writer {
         }
     }
 
-    pub fn get_color_code(&self) -> ColorCode { self.color_code }
-    pub fn get_quotes_condition(&self) -> bool { self.condition.is_quotes_open }
-    pub fn set_color_code(&mut self, new_code: Color) { self.color_code.set_foreground(new_code) }
+    pub fn get_color_code(&self) -> ColorCode {
+        self.color_code
+    }
+    pub fn get_quotes_condition(&self) -> bool {
+        self.condition.is_quotes_open
+    }
+    pub fn set_color_code(&mut self, new_code: Color) {
+        self.color_code.set_foreground(new_code)
+    }
 
     pub fn set_quotes_condition(&mut self, new_condition: bool) {
         self.condition.is_quotes_open = new_condition;

@@ -31,7 +31,9 @@ impl ColorCode {
     }
 
     // устанавливает новый цвет фона
-    pub fn set_background(&mut self, background: Color) { self.0 |= (background as u8) << 4; }
+    pub fn set_background(&mut self, background: Color) {
+        self.0 |= (background as u8) << 4;
+    }
 
     // устанавливает новый цвет текста
     pub fn set_foreground(&mut self, foreground: Color) {

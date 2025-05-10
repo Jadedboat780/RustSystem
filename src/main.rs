@@ -6,11 +6,8 @@
 
 extern crate alloc;
 
-use bootloader::{entry_point, BootInfo};
-use rust_system::{
-    print, println,
-    vga_buffer::start_message,
-};
+use bootloader::{BootInfo, entry_point};
+use rust_system::{print, vga_buffer::start_message};
 
 // определяем точку входа
 entry_point!(kernel_main);
@@ -25,7 +22,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // инициализация маппера страниц и аллокатор кадров
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator =  memory::BootInfoFrameAllocator::init(&boot_info.memory_map);
+    let mut frame_allocator = memory::BootInfoFrameAllocator::init(&boot_info.memory_map);
 
     // инициализация кучи
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
@@ -44,7 +41,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    println!("{}", info);
+    print!("{}", info);
     rust_system::hlt_loop();
 }
 

@@ -1,9 +1,9 @@
 #![no_std]
 #![no_main]
 
-use oper_system::{exit_qemu, serial_print, serial_println, QemuExitCode};
+use rust_system::{QemuExitCode, exit_qemu, serial_print, serial_println};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn _start() -> ! {
     should_fail();
     serial_println!("[test did not panic]");

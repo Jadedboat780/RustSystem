@@ -3,20 +3,20 @@ mod colors;
 pub mod console;
 mod writer;
 
-use colors::{Color, ColorCode};
-use writer::Writer;
-use core::fmt;
-use buffer::Buffer;
-use lazy_static::lazy_static;
 use crate::custom_types::spin_lock::SpinLock;
+use buffer::Buffer;
+use colors::{Color, ColorCode};
+use core::fmt;
+use lazy_static::lazy_static;
+use writer::Writer;
 
 // писатель
 lazy_static! {
-    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(
-        Writer::new(0,
+    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(
+        0,
         ColorCode::new(Color::LightBlue, Color::Black),
-        unsafe { &mut *(0xb8000 as *mut Buffer) })
-    );
+        unsafe { &mut *(0xb8000 as *mut Buffer) }
+    ));
 }
 
 //ниже идёт реализация макросов для вывода сообщений в консоль
@@ -41,7 +41,6 @@ macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
-
 
 pub fn start_message() {
     println!(r"/\/\/\/\/\/\/\/\/\/\/\//\/\/\/\/\//\/\/\/\/\/\/\/\/\/\/\/\/\//\/\/\/\/\//\/\/\/\");

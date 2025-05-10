@@ -1,8 +1,10 @@
-use core::{ptr, mem};
-use x86_64::structures::paging::{mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB};
-use x86_64::VirtAddr;
-use alloc::alloc::{GlobalAlloc, Layout};
 use super::custom_types::spin_lock::SpinLock;
+use alloc::alloc::{GlobalAlloc, Layout};
+use core::{mem, ptr};
+use x86_64::VirtAddr;
+use x86_64::structures::paging::{
+    FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError,
+};
 
 const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048]; // размеры используемых блоков
 pub const HEAP_START: usize = 0x_4444_4444_0000; // начальный адрес для выделения памяти под кучу
@@ -25,6 +27,12 @@ pub struct FixedSizeBlockAllocator {
     fallback_allocator: linked_list_allocator::Heap,
 }
 
+impl Default for FixedSizeBlockAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FixedSizeBlockAllocator {
     // конструктор аллокатора (создаёт пустой FixedSizeBlockAllocator)
     pub const fn new() -> Self {
@@ -36,9 +44,9 @@ impl FixedSizeBlockAllocator {
     }
 
     // инициализация аллокатора с заданными границами
-    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
+    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) { unsafe {
         self.fallback_allocator.init(heap_start, heap_size);
-    }
+    }}
 
     // аллокация блока памяти
     fn fallback_alloc(&mut self, layout: Layout) -> *mut u8 {
@@ -54,26 +62,24 @@ unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut allocator = self.lock();
         match list_index(&layout) {
-            Some(index) => {
-                match allocator.list_heads[index].take() {
-                    Some(node) => {
-                        allocator.list_heads[index] = node.next.take();
-                        node as *mut ListNode as *mut u8
-                    }
-                    None => {
-                        let block_size = BLOCK_SIZES[index];
-                        let block_align = block_size;
-                        let layout = Layout::from_size_align(block_size, block_align).unwrap();
-                        allocator.fallback_alloc(layout)
-                    }
+            Some(index) => match allocator.list_heads[index].take() {
+                Some(node) => {
+                    allocator.list_heads[index] = node.next.take();
+                    node as *mut ListNode as *mut u8
                 }
-            }
+                None => {
+                    let block_size = BLOCK_SIZES[index];
+                    let block_align = block_size;
+                    let layout = Layout::from_size_align(block_size, block_align).unwrap();
+                    allocator.fallback_alloc(layout)
+                }
+            },
             None => allocator.fallback_alloc(layout),
         }
     }
 
     // освобождение памяти
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) { unsafe {
         let mut allocator = self.lock();
         match list_index(&layout) {
             Some(index) => {
@@ -91,7 +97,7 @@ unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
                 allocator.fallback_allocator.deallocate(ptr, layout);
             }
         }
-    }
+    }}
 }
 
 // сообщяем компилятору какой аллокатор следует использовать
@@ -112,7 +118,9 @@ pub fn init_heap(
     };
 
     for page in page_range {
-        let frame = frame_allocator.allocate_frame().ok_or(MapToError::FrameAllocationFailed)?;
+        let frame = frame_allocator
+            .allocate_frame()
+            .ok_or(MapToError::FrameAllocationFailed)?;
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
         unsafe { mapper.map_to(page, frame, flags, frame_allocator)?.flush() };
     }

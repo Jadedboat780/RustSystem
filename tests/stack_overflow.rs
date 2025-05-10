@@ -3,14 +3,14 @@
 #![feature(abi_x86_interrupt)]
 
 use lazy_static::lazy_static;
-use oper_system::{exit_qemu, serial_print, serial_println, QemuExitCode};
+use rust_system::{QemuExitCode, exit_qemu, serial_print, serial_println};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn _start() -> ! {
     serial_print!("stack_overflow::stack_overflow...\t");
 
-    oper_system::gdt::init();
+    rust_system::gdt::init();
     init_test_idt();
     stack_overflow();
 
@@ -29,7 +29,7 @@ lazy_static! {
         unsafe {
             idt.double_fault
                 .set_handler_fn(test_double_fault_handler)
-                .set_stack_index(oper_system::gdt::DOUBLE_FAULT_IST_INDEX);
+                .set_stack_index(rust_system::gdt::DOUBLE_FAULT_IST_INDEX);
         }
 
         idt
@@ -51,5 +51,5 @@ extern "x86-interrupt" fn test_double_fault_handler(
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    oper_system::test_panic_handler(info)
+    rust_system::test_panic_handler(info)
 }
