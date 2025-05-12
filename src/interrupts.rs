@@ -1,6 +1,4 @@
-use super::{
-    custom_types::spin_lock::SpinLock, gdt, hlt_loop, println, vga_buffer::console::keyboard,
-};
+use super::{custom_types::spin_lock::SpinLock, gdt, hlt_loop, println};
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
@@ -93,7 +91,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 
     let mut port = Port::new(0x60);
     let scancode: u8 = unsafe { port.read() };
-    keyboard(scancode);
+    crate::task::keyboard::add_scancode(scancode);
 
     unsafe {
         PICS.lock()

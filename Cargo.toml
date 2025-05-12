@@ -12,13 +12,17 @@ name = "stack_overflow"
 harness = false
 
 [dependencies]
-bootloader = { version = "0.9.23", features = ["map_physical_memory"]}    # реализует базовый BIOS-загрузчик без каких-либо C-зависимостей
+bootloader = { version = "0.9.23", features = ["map_physical_memory"] }    # реализует базовый BIOS-загрузчик без каких-либо C-зависимостей
 linked_list_allocator = "0.9.0"    # предоставляет способы управления и выделения блоков памяти для аллокатора
 volatile = "0.2.6"    # предоставляет инструменты для безопасной работы с важными данными и регистрами аппаратуры
 x86_64 = "0.14.2"    # предоставляет инструменты и абстракции для работы с архитектурой x86_64
 uart_16550 = "0.2.0"    # ящик для инициализации UART и отправки данных через последовательный порт
 pic8259 = "0.10.1"    # предоставляет интерфейс для работы с контроллерами прерываний Intel 8259
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }    # предоставляет макрос для лениво инициализируемых статических переменных
+crossbeam-queue = { version = "0.3.11", default-features = false, features = ["alloc"] }
+pc-keyboard = "0.7.0"
+conquer-once = { version = "0.2", default-features = false }
+futures-util = { version = "0.3.4", default-features = false, features = ["alloc"] }
 
 #[profile.dev]
 #panic = "abort"

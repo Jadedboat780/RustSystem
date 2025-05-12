@@ -7,7 +7,11 @@
 extern crate alloc;
 
 use bootloader::{BootInfo, entry_point};
-use rust_system::{print, vga_buffer::start_message};
+use rust_system::{
+    print,
+    task::{Task, executor::Executor, keyboard},
+    vga_buffer::start_message,
+};
 
 // определяем точку входа
 entry_point!(kernel_main);
@@ -34,7 +38,9 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     start_message();
     print!("<<< ");
 
-    rust_system::hlt_loop();
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
 }
 
 // обработчик паники для системы
