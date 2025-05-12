@@ -44,9 +44,9 @@ impl FixedSizeBlockAllocator {
     }
 
     // инициализация аллокатора с заданными границами
-    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) { unsafe {
+    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.fallback_allocator.init(heap_start, heap_size);
-    }}
+    }
 
     // аллокация блока памяти
     fn fallback_alloc(&mut self, layout: Layout) -> *mut u8 {
@@ -79,25 +79,27 @@ unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
     }
 
     // освобождение памяти
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) { unsafe {
-        let mut allocator = self.lock();
-        match list_index(&layout) {
-            Some(index) => {
-                let new_node = ListNode {
-                    next: allocator.list_heads[index].take(),
-                };
-                assert!(mem::size_of::<ListNode>() <= BLOCK_SIZES[index]);
-                assert!(mem::align_of::<ListNode>() <= BLOCK_SIZES[index]);
-                let new_node_ptr = ptr as *mut ListNode;
-                new_node_ptr.write(new_node);
-                allocator.list_heads[index] = Some(&mut *new_node_ptr);
-            }
-            None => {
-                let ptr = ptr::NonNull::new(ptr).unwrap();
-                allocator.fallback_allocator.deallocate(ptr, layout);
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        unsafe {
+            let mut allocator = self.lock();
+            match list_index(&layout) {
+                Some(index) => {
+                    let new_node = ListNode {
+                        next: allocator.list_heads[index].take(),
+                    };
+                    assert!(mem::size_of::<ListNode>() <= BLOCK_SIZES[index]);
+                    assert!(mem::align_of::<ListNode>() <= BLOCK_SIZES[index]);
+                    let new_node_ptr = ptr as *mut ListNode;
+                    new_node_ptr.write(new_node);
+                    allocator.list_heads[index] = Some(&mut *new_node_ptr);
+                }
+                None => {
+                    let ptr = ptr::NonNull::new(ptr).unwrap();
+                    allocator.fallback_allocator.deallocate(ptr, layout);
+                }
             }
         }
-    }}
+    }
 }
 
 // сообщяем компилятору какой аллокатор следует использовать
