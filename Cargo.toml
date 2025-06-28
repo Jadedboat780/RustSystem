@@ -1,38 +1,73 @@
+[workspace]
+resolver = "2"
+members = [ "crates/custom-types","crates/vga"]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+bootloader = { version = "0.9.23", features = ["map_physical_memory"] }
+linked_list_allocator = "0.9.0"
+volatile = "0.2.6"
+x86_64 = "0.15.2"
+uart_16550 = "0.2.0"
+pic8259 = "0.10.1"
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+crossbeam-queue = { version = "0.3.11", default-features = false, features = [
+    "alloc",
+] }
+pc-keyboard = "0.7.0"
+conquer-once = { version = "0.2", default-features = false }
+futures-util = { version = "0.3.4", default-features = false, features = [
+    "alloc",
+] }
+
+vga = { path = "crates/vga" }
+custom-types = {path = "crates/custom-types"}
+
 [package]
 name = "rust-system"
 version = "0.0.1"
 edition = "2024"
 
-[[test]]    #настраиваем тестовый сценарий для паники
-name = "should_panic"
-harness = false
-
-[[test]]    #настраиваем тестовый сценарий переполнения стека
-name = "stack_overflow"
-harness = false
-
 [dependencies]
-bootloader = { version = "0.9.23", features = ["map_physical_memory"] }    # реализует базовый BIOS-загрузчик без каких-либо C-зависимостей
-linked_list_allocator = "0.9.0"    # предоставляет способы управления и выделения блоков памяти для аллокатора
-volatile = "0.2.6"    # предоставляет инструменты для безопасной работы с важными данными и регистрами аппаратуры
-x86_64 = "0.14.2"    # предоставляет инструменты и абстракции для работы с архитектурой x86_64
-uart_16550 = "0.2.0"    # ящик для инициализации UART и отправки данных через последовательный порт
-pic8259 = "0.10.1"    # предоставляет интерфейс для работы с контроллерами прерываний Intel 8259
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }    # предоставляет макрос для лениво инициализируемых статических переменных
-crossbeam-queue = { version = "0.3.11", default-features = false, features = ["alloc"] }
-pc-keyboard = "0.7.0"
-conquer-once = { version = "0.2", default-features = false }
-futures-util = { version = "0.3.4", default-features = false, features = ["alloc"] }
+bootloader.workspace = true
+x86_64.workspace = true
+volatile.workspace = true
+uart_16550.workspace = true
+pic8259.workspace = true
+pc-keyboard.workspace = true
+linked_list_allocator.workspace = true
+lazy_static.workspace = true
+conquer-once.workspace = true
+futures-util.workspace = true
+crossbeam-queue.workspace = true
 
-#[profile.dev]
-#panic = "abort"
+vga.workspace = true
+custom-types.workspace = true
+
 
 [profile.release]
 panic = "abort"
 lto = true
 codegen-units = 1
 
+[[test]]
+name = "should_panic"
+harness = false
+
+[[test]]
+name = "stack_overflow"
+harness = false
+
 [package.metadata.bootimage]
-test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
-test-success-exit-code = 33    # код завершения для успешно выполненных тестов
-test-timeout = 5    # максимальное время ожидания теста
+test-args = [
+    "-device",
+    "isa-debug-exit,iobase=0xf4,iosize=0x04",
+    "-serial",
+    "stdio",
+    "-display",
+    "none",
+]
+test-success-exit-code = 33
+test-timeout = 5
