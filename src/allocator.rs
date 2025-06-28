@@ -1,27 +1,26 @@
-use super::custom_types::spin_lock::SpinLock;
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::{mem, ptr};
-use x86_64::VirtAddr;
-use x86_64::structures::paging::{
-    FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError,
+use custom_types::spin_lock::SpinLock;
+use x86_64::{
+    VirtAddr,
+    structures::paging::{
+        FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError,
+    },
 };
 
-const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048]; // размеры используемых блоков
-pub const HEAP_START: usize = 0x_4444_4444_0000; // начальный адрес для выделения памяти под кучу
-pub const HEAP_SIZE: usize = 100 * 1024; // размер кучи в байтах (100 килабойт)
+const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048];
+pub const HEAP_START: usize = 0x_4444_4444_0000;
+pub const HEAP_SIZE: usize = 100 * 1024; // 100 KB
 
-// возвращает минимально возможный размер блока для заданного Layout
 fn list_index(layout: &Layout) -> Option<usize> {
     let required_block_size = layout.size().max(layout.align());
     BLOCK_SIZES.iter().position(|&s| s >= required_block_size)
 }
 
-// структура представляющая узел списка
 struct ListNode {
     next: Option<&'static mut ListNode>,
 }
 
-// аллокатор блоков фиксированного размера
 pub struct FixedSizeBlockAllocator {
     list_heads: [Option<&'static mut ListNode>; BLOCK_SIZES.len()],
     fallback_allocator: linked_list_allocator::Heap,
@@ -34,7 +33,6 @@ impl Default for FixedSizeBlockAllocator {
 }
 
 impl FixedSizeBlockAllocator {
-    // конструктор аллокатора (создаёт пустой FixedSizeBlockAllocator)
     pub const fn new() -> Self {
         const EMPTY: Option<&'static mut ListNode> = None;
         FixedSizeBlockAllocator {
@@ -43,12 +41,12 @@ impl FixedSizeBlockAllocator {
         }
     }
 
-    // инициализация аллокатора с заданными границами
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
-        self.fallback_allocator.init(heap_start, heap_size);
+        unsafe {
+            self.fallback_allocator.init(heap_start, heap_size);
+        }
     }
 
-    // аллокация блока памяти
     fn fallback_alloc(&mut self, layout: Layout) -> *mut u8 {
         match self.fallback_allocator.allocate_first_fit(layout) {
             Ok(ptr) => ptr.as_ptr(),
@@ -57,10 +55,11 @@ impl FixedSizeBlockAllocator {
     }
 }
 
-unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
-    // выделение памяти
+struct LockFixedSizeBlockAllocator(SpinLock<FixedSizeBlockAllocator>);
+
+unsafe impl GlobalAlloc for LockFixedSizeBlockAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let mut allocator = self.lock();
+        let mut allocator = self.0.lock();
         match list_index(&layout) {
             Some(index) => match allocator.list_heads[index].take() {
                 Some(node) => {
@@ -78,10 +77,9 @@ unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
         }
     }
 
-    // освобождение памяти
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         unsafe {
-            let mut allocator = self.lock();
+            let mut allocator = self.0.lock();
             match list_index(&layout) {
                 Some(index) => {
                     let new_node = ListNode {
@@ -102,18 +100,17 @@ unsafe impl GlobalAlloc for SpinLock<FixedSizeBlockAllocator> {
     }
 }
 
-// сообщяем компилятору какой аллокатор следует использовать
 #[global_allocator]
-static ALLOCATOR: SpinLock<FixedSizeBlockAllocator> = SpinLock::new(FixedSizeBlockAllocator::new());
+static ALLOCATOR: LockFixedSizeBlockAllocator =
+    LockFixedSizeBlockAllocator(SpinLock::new(FixedSizeBlockAllocator::new()));
 
-// инициализации кучи (почему всё это так сложко, я устал))))
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
 ) -> Result<(), MapToError<Size4KiB>> {
     let page_range = {
         let heap_start = VirtAddr::new(HEAP_START as u64);
-        let heap_end = heap_start + HEAP_SIZE - 1u64;
+        let heap_end = heap_start + HEAP_SIZE as u64 - 1u64;
         let heap_start_page = Page::containing_address(heap_start);
         let heap_end_page = Page::containing_address(heap_end);
         Page::range_inclusive(heap_start_page, heap_end_page)
@@ -127,6 +124,6 @@ pub fn init_heap(
         unsafe { mapper.map_to(page, frame, flags, frame_allocator)?.flush() };
     }
 
-    unsafe { ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE) }
+    unsafe { ALLOCATOR.0.lock().init(HEAP_START, HEAP_SIZE) }
     Ok(())
 }
