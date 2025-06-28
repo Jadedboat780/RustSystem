@@ -1,53 +1,28 @@
-use super::buffer::{BUFFER_HEIGHT, BUFFER_WIDTH, Buffer, ScreenChar};
-use super::colors::{Color, ColorCode};
+use super::{
+    buffer::{BUFFER_HEIGHT, BUFFER_WIDTH, Buffer, ScreenChar},
+    colors::{Color, ColorCode},
+};
 use core::fmt;
 
-// структура для отслеживание состояния консоли
-struct Condition {
-    is_quotes_open: bool,
-}
-
-//структура для представления Писателя
 pub struct Writer {
-    column_position: usize,      // текущая позицию в столбце
-    color_code: ColorCode,       //
-    buffer: &'static mut Buffer, //
-    condition: Condition,        // состояние консоли
+    column_position: usize,
+    color_code: ColorCode,
+    buffer: &'static mut Buffer,
 }
 
 impl Writer {
     pub fn new(column_position: usize, color_code: ColorCode, buffer: &'static mut Buffer) -> Self {
-        let condition = Condition {
-            is_quotes_open: false,
-        };
         Self {
             column_position,
             color_code,
             buffer,
-            condition,
         }
     }
 
-    pub fn get_color_code(&self) -> ColorCode {
-        self.color_code
-    }
-    pub fn get_quotes_condition(&self) -> bool {
-        self.condition.is_quotes_open
-    }
     pub fn set_color_code(&mut self, new_code: Color) {
         self.color_code.set_foreground(new_code)
     }
 
-    pub fn set_quotes_condition(&mut self, new_condition: bool) {
-        self.condition.is_quotes_open = new_condition;
-        if new_condition {
-            self.set_color_code(Color::Pink);
-        } else {
-            self.set_color_code(Color::LightBlue);
-        }
-    }
-
-    // метод для переноса на новую строку
     pub fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
@@ -59,12 +34,10 @@ impl Writer {
         self.column_position = 0;
     }
 
-    // метод для табуляции
     fn indentation(&mut self) {
         self.column_position += 4;
     }
 
-    // метод для очистки строки(перезаписывает все её символы пробелом)
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
@@ -75,7 +48,6 @@ impl Writer {
         }
     }
 
-    // метод для записи одного байта ASCII
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -97,7 +69,6 @@ impl Writer {
         }
     }
 
-    // метод для записи сразу нескольких символов
     pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
@@ -107,7 +78,6 @@ impl Writer {
         }
     }
 
-    // функция для удаления символов
     pub fn delete_char(&mut self) {
         if self.column_position >= 5 {
             self.column_position -= 1;
@@ -122,21 +92,35 @@ impl Writer {
         }
     }
 
-    pub fn delete_string(&mut self) {
-        while self.column_position >= 5 {
-            self.delete_char()
+    pub fn clear_screen(&mut self) {
+        for row in 0..BUFFER_HEIGHT {
+            self.clear_row(row);
         }
+        self.column_position = 0;
     }
-
-    // fn check_on_delete_special_char(){
-    //
-    // }
 }
 
-// функционал для форматированного вывода данных в виде строки
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
         Ok(())
     }
 }
+
+// #[test_case]
+// fn test_println_output() {
+//     use core::fmt::Write;
+//     use x86_64::instructions::interrupts;
+//     use crate::buffer::BUFFER_HEIGHT;
+//
+//     let s = "Some test string that fits on a single line";
+//     interrupts::without_interrupts(|| {
+//         let mut writer = WRITER.lock();
+//         writeln!(writer, "\n{}", s).expect("writeln failed");
+//         for (i, c) in s.chars().enumerate() {
+//             let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+//             assert_eq!(char::from(screen_char.ascii_character), c);
+//         }
+//     });
+// }
+//

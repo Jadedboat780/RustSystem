@@ -1,20 +1,28 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
-#![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
+#![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
 
 pub mod allocator;
-pub mod custom_types;
+pub mod commands;
+mod datetime;
 pub mod gdt;
 pub mod interrupts;
 pub mod memory;
 pub mod serial;
 pub mod task;
-pub mod vga_buffer;
+
+use custom_types::spin_lock::SpinLock;
+use lazy_static::lazy_static;
+use vga::{
+    buffer::Buffer,
+    colors::{Color, ColorCode},
+    writer::Writer,
+};
 
 pub fn init() {
     gdt::init(); // включение двойных ошибок цп
@@ -23,7 +31,6 @@ pub fn init() {
     x86_64::instructions::interrupts::enable(); // включение внешних прерываний
 }
 
-// интерфейс для запуска тестовов
 pub trait Testable {
     fn run(&self);
 }
@@ -37,7 +44,6 @@ impl<T: Fn()> Testable for T {
     }
 }
 
-// принимает срез, который состоит из всех тестов, и запускает их
 pub fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
@@ -79,7 +85,35 @@ pub fn hlt_loop() -> ! {
     }
 }
 
-// ниже идёт реализация тестов
+lazy_static! {
+    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(
+        0,
+        ColorCode::new(Color::Pink, Color::Black),
+        unsafe { &mut *(0xb8000 as *mut Buffer) }
+    ));
+}
+
+#[doc(hidden)]
+pub fn _print(args: core::fmt::Arguments) {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
+    // Stop interrupts while we're printing
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).expect("Printing failed");
+    });
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ($crate::_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
 
 #[cfg(test)]
 use bootloader::{BootInfo, entry_point};

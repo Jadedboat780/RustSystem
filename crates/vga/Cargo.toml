@@ -1,0 +1,10 @@
+[package]
+name = "vga"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+volatile.workspace = true
+x86_64.workspace = true
+lazy_static.workspace = true
+custom-types.workspace = true
