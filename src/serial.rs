@@ -1,8 +1,7 @@
-use super::custom_types::spin_lock::SpinLock;
+use custom_types::spin_lock::SpinLock;
 use lazy_static::lazy_static;
 use uart_16550::SerialPort;
 
-// объект последовательного порта
 lazy_static! {
     pub static ref SERIAL: SpinLock<SerialPort> = {
         let mut serial_port = unsafe { SerialPort::new(0x3F8) };
@@ -11,7 +10,6 @@ lazy_static! {
     };
 }
 
-// ниже идёт реализация вывода данных в последовательный порт
 #[doc(hidden)]
 pub fn _print(args: ::core::fmt::Arguments) {
     use core::fmt::Write;
