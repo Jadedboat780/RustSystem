@@ -1,3 +1,5 @@
+#![no_std]
+
 use lazy_static::lazy_static;
 use x86_64::{
     VirtAddr,
@@ -16,7 +18,8 @@ lazy_static! {
             const STACK_SIZE: usize = 4096 * 5;
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
 
-            let stack_start = VirtAddr::from_ptr(unsafe { &raw const STACK });
+            let stack_start = VirtAddr::from_ptr(&raw const STACK);
+
             stack_start + STACK_SIZE as u64
         };
         tss
@@ -46,7 +49,7 @@ struct Selectors {
 pub fn init() {
     use x86_64::instructions::{
         segmentation::{CS, Segment},
-        tables::load_tss
+        tables::load_tss,
     };
 
     GDT.0.load();
