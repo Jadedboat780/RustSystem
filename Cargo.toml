@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "crates/custom-types","crates/vga"]
+members = ["crates/custom-types", "crates/serial", "crates/vga"]
 
 [workspace.package]
 edition = "2024"
@@ -22,8 +22,9 @@ futures-util = { version = "0.3.4", default-features = false, features = [
     "alloc",
 ] }
 
+serial = { path = "crates/serial" }
 vga = { path = "crates/vga" }
-custom-types = {path = "crates/custom-types"}
+custom-types = { path = "crates/custom-types" }
 
 [package]
 name = "rust-system"
@@ -34,15 +35,11 @@ edition = "2024"
 bootloader.workspace = true
 x86_64.workspace = true
 volatile.workspace = true
-uart_16550.workspace = true
 pic8259.workspace = true
-pc-keyboard.workspace = true
 linked_list_allocator.workspace = true
 lazy_static.workspace = true
-conquer-once.workspace = true
-futures-util.workspace = true
-crossbeam-queue.workspace = true
 
+serial.workspace = true
 vga.workspace = true
 custom-types.workspace = true
 
