@@ -1,3 +1,5 @@
+#![no_std]
+
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
     PhysAddr, VirtAddr,
@@ -50,8 +52,8 @@ unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
 }
 
 pub struct BootInfoFrameAllocator {
-    memory_map: &'static MemoryMap, 
-    next: usize,                    
+    memory_map: &'static MemoryMap,
+    next: usize,
 }
 
 impl BootInfoFrameAllocator {
@@ -61,7 +63,7 @@ impl BootInfoFrameAllocator {
             next: 0,
         }
     }
-    
+
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
         let regions = self.memory_map.iter();
         let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
