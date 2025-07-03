@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "allocators"
+version = "0.1.0"
+dependencies = [
+ "custom-types",
+ "linked_list_allocator",
+ "x86_64 0.15.2",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -37,6 +46,21 @@ name = "custom-types"
 version = "0.1.0"
 
 [[package]]
+name = "datetime"
+version = "0.1.0"
+dependencies = [
+ "custom-types",
+]
+
+[[package]]
+name = "gdt"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "x86_64 0.15.2",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -65,6 +89,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "memory"
+version = "0.1.0"
+dependencies = [
+ "bootloader",
+ "x86_64 0.15.2",
+]
+
+[[package]]
 name = "pic8259"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -84,10 +116,13 @@ dependencies = [
 name = "rust-system"
 version = "0.0.1"
 dependencies = [
+ "allocators",
  "bootloader",
  "custom-types",
+ "datetime",
+ "gdt",
  "lazy_static",
- "linked_list_allocator",
+ "memory",
  "pic8259",
  "pit",
  "serial",
