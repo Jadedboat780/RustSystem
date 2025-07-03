@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/custom-types", "crates/serial", "crates/vga"]
+members = ["crates/custom-types", "crates/serial", "crates/vga", "crates/pit"]
 
 [workspace.package]
 edition = "2024"
@@ -13,16 +13,10 @@ x86_64 = "0.15.2"
 uart_16550 = "0.2.0"
 pic8259 = "0.10.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
-crossbeam-queue = { version = "0.3.11", default-features = false, features = [
-    "alloc",
-] }
-pc-keyboard = "0.7.0"
-conquer-once = { version = "0.2", default-features = false }
-futures-util = { version = "0.3.4", default-features = false, features = [
-    "alloc",
-] }
 
+# custom crates
 serial = { path = "crates/serial" }
+pit = {path = "crates/pit"}
 vga = { path = "crates/vga" }
 custom-types = { path = "crates/custom-types" }
 
@@ -42,6 +36,7 @@ lazy_static.workspace = true
 serial.workspace = true
 vga.workspace = true
 custom-types.workspace = true
+pit.workspace = true
 
 
 [profile.release]
