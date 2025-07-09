@@ -23,6 +23,10 @@ impl Writer {
         self.color_code.set_foreground(new_code)
     }
 
+    pub fn set_column_position(&mut self, new_position: usize) {
+        self.column_position = new_position;
+    }
+
     pub fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
@@ -56,7 +60,6 @@ impl Writer {
                 if self.column_position >= BUFFER_WIDTH {
                     self.new_line();
                 }
-
                 let row = BUFFER_HEIGHT - 1;
                 let col = self.column_position;
 
@@ -69,17 +72,24 @@ impl Writer {
         }
     }
 
-    pub fn write_string(&mut self, s: &str) {
-        for byte in s.bytes() {
-            match byte {
-                0x20..=0x7e | b'\n' | b'\t' => self.write_byte(byte),
-                _ => self.write_byte(0xfe),
-            }
+    pub fn write_at(&mut self, row: usize, col: usize, byte: u8) {
+        if row < BUFFER_HEIGHT && col < BUFFER_WIDTH {
+            self.buffer.chars[row][col].write(ScreenChar {
+                ascii_character: byte,
+                color_code: self.color_code,
+            });
         }
     }
 
+    pub fn write_string(&mut self, s: &str) {
+        s.bytes().for_each(|byte| match byte {
+            0x20..=0x7e | b'\n' | b'\t' => self.write_byte(byte),
+            _ => self.write_byte(0xfe),
+        });
+    }
+
     pub fn delete_char(&mut self) {
-        if self.column_position >= 5 {
+        if self.column_position >= 22 {
             self.column_position -= 1;
 
             let row = BUFFER_HEIGHT - 1;
