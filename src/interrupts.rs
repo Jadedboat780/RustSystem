@@ -1,21 +1,18 @@
-use core::ops::IndexMut;
-use super::{gdt, hlt_loop};
-use crate::{
-    datetime::{CURRENT_TIME, TICKS},
-    println,
-};
-use core::sync::atomic::Ordering;
+use super::hlt_loop;
+use crate::{keyboard::print_scancode, println};
+use core::{ops::IndexMut, sync::atomic::Ordering};
 use custom_types::spin_lock::SpinLock;
+use datetime::{CURRENT_TIME, TICKS};
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
-// номера для прерываний ЦП
 const PIC_1_OFFSET: u8 = 32;
 const PIC_2_OFFSET: u8 = 40;
 
 pub static PICS: SpinLock<ChainedPics> =
     SpinLock::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
@@ -26,8 +23,10 @@ lazy_static! {
                 .set_handler_fn(double_fault_handler)
                 .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
         }
-        idt.index_mut(InterruptIndex::Timer.as_u8()).set_handler_fn(timer_interrupt_handler);
-        idt.index_mut(InterruptIndex::Keyboard.as_u8()).set_handler_fn(keyboard_interrupt_handler);
+        idt.index_mut(InterruptIndex::Timer.as_u8())
+            .set_handler_fn(timer_interrupt_handler);
+        idt.index_mut(InterruptIndex::Keyboard.as_u8())
+            .set_handler_fn(keyboard_interrupt_handler);
         idt
     };
 }
@@ -71,7 +70,10 @@ extern "x86-interrupt" fn page_fault_handler(
     hlt_loop();
 }
 
-extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame, _error_code: u64) -> ! {
+extern "x86-interrupt" fn double_fault_handler(
+    stack_frame: InterruptStackFrame,
+    _error_code: u64,
+) -> ! {
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
@@ -93,7 +95,8 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     use x86_64::instructions::port::Port;
 
     let mut port = Port::new(0x60);
-    let _scancode: u8 = unsafe { port.read() };
+    let scancode = unsafe { port.read() };
+    print_scancode(scancode);
 
     unsafe {
         PICS.lock()
