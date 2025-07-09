@@ -9,12 +9,8 @@ extern crate alloc;
 
 pub mod allocator;
 pub mod commands;
-mod datetime;
-pub mod gdt;
 pub mod interrupts;
-pub mod memory;
-pub mod serial;
-pub mod task;
+pub mod keyboard;
 
 use custom_types::spin_lock::SpinLock;
 use lazy_static::lazy_static;
@@ -25,42 +21,19 @@ use vga::{
 };
 
 pub fn init() {
-    gdt::init(); // включение двойных ошибок цп
-    interrupts::init_idt(); // инициализация исключений ЦП
-    unsafe { interrupts::PICS.lock().initialize() }; // инициализации PIC
-    x86_64::instructions::interrupts::enable(); // включение внешних прерываний
+    gdt::init();
+    pit::init();
+    interrupts::init_idt();
+    unsafe { interrupts::PICS.lock().initialize() };
+    x86_64::instructions::interrupts::enable();
 }
 
-pub trait Testable {
-    fn run(&self);
-}
-
-impl<T: Fn()> Testable for T {
-    // запуск тестов (функции помеченные #[cfg(test)])
-    fn run(&self) {
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        self();
-        serial_println!("[ok]");
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
     }
 }
 
-pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-    exit_qemu(QemuExitCode::Success);
-}
-
-// обработка паники для тестов
-pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-    hlt_loop();
-}
-
-// перечисление кодов завершения для QEMU
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QemuExitCode {
@@ -68,7 +41,6 @@ pub enum QemuExitCode {
     Failed = 0x11,
 }
 
-// отправка информации в порт о коде завершения
 pub fn exit_qemu(exit_code: QemuExitCode) {
     use x86_64::instructions::port::Port;
 
@@ -76,21 +48,6 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
-}
-
-// позволяет процессору перейти в состояние сна в ожидании следующего прерывания
-pub fn hlt_loop() -> ! {
-    loop {
-        x86_64::instructions::hlt();
-    }
-}
-
-lazy_static! {
-    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(
-        0,
-        ColorCode::new(Color::Pink, Color::Black),
-        unsafe { &mut *(0xb8000 as *mut Buffer) }
-    ));
 }
 
 #[doc(hidden)]
@@ -115,8 +72,74 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+lazy_static! {
+    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(
+        0,
+        ColorCode::new(Color::Pink, Color::Black),
+        unsafe { &mut *(0xb8000 as *mut Buffer) }
+    ));
+}
+
+pub fn print_logo(row: usize, col: usize) {
+    const ASCII_LOGO: &str = r"
+         ____            _     ____            _
+        |  _ \ _   _ ___| |_  / ___| _   _ ___| |_ ___ _ __ ___
+        | |_) | | | / __| __| \___ \| | | / __| __/ _ \ '_ ` _ \
+        |  _ <| |_| \__ \ |_   ___) | |_| \__ \ ||  __/ | | | | |
+        |_| \_\\__,_|___/\__| |____/ \__, |___/\__\___|_| |_| |_|
+                                     |___/
+";
+    println!("{}", ASCII_LOGO);
+
+    let dots = [b'.', b'.', b'.'];
+
+    for _ in 0..5 {
+        for i in 0..dots.len() {
+            for (j, _) in dots.iter().enumerate().take(i + 1) {
+                WRITER.lock().write_at(row, col + j, dots[j]);
+            }
+
+            datetime::sleep_cycles(500_000_000);
+
+            for j in 0..=i {
+                WRITER.lock().write_at(row, col + j, b' ');
+            }
+        }
+    }
+
+    commands::clear();
+}
+
+pub trait Testable {
+    fn run(&self);
+}
+
+impl<T: Fn()> Testable for T {
+    fn run(&self) {
+        serial_print!("{}...\t", core::any::type_name::<T>());
+        self();
+        serial_println!("[ok]");
+    }
+}
+
+pub fn test_runner(tests: &[&dyn Testable]) {
+    serial_println!("Running {} tests", tests.len());
+    for test in tests {
+        test.run();
+    }
+    exit_qemu(QemuExitCode::Success);
+}
+
+pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
+    serial_println!("[failed]\n");
+    serial_println!("Error: {}\n", info);
+    exit_qemu(QemuExitCode::Failed);
+    hlt_loop();
+}
+
 #[cfg(test)]
 use bootloader::{BootInfo, entry_point};
+use serial::{serial_print, serial_println};
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
