@@ -5,7 +5,6 @@ mod date_time;
 use core::sync::atomic::AtomicUsize;
 pub use date_time::*;
 
-
 pub static TICKS: AtomicUsize = AtomicUsize::new(0);
 
 #[inline(always)]
@@ -24,6 +23,6 @@ fn rdtsc() -> u64 {
 }
 
 pub fn sleep_cycles(cycles: u64) {
-    let start = rdtsc() ;
+    let start = rdtsc();
     while rdtsc() - start < cycles {}
 }

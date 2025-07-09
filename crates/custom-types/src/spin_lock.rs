@@ -19,7 +19,7 @@ impl<T> SpinLock<T> {
             value: UnsafeCell::new(value),
         }
     }
-    
+
     #[inline]
     pub fn lock(&self) -> Guard<'_, T> {
         while self.locked.swap(true, Acquire) {
@@ -122,32 +122,32 @@ impl<T> Drop for Guard<'_, T> {
 // #[cfg(test)]
 // mod test {
 //     use super::*;
-// 
+//
 //     #[test_case]
 //     fn test_lock() {
 //         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
 //         assert!(!array.is_locked());
-// 
+//
 //         let _lock_array = array.lock();
 //         assert!(array.is_locked())
 //     }
-// 
+//
 //     #[test_case]
 //     fn test_try_lock() {
 //         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
 //         let lock_array_1 = array.try_lock();
 //         assert!(lock_array_1.is_some());
-// 
+//
 //         let lock_array_2 = array.try_lock();
 //         assert!(lock_array_2.is_none())
 //     }
-// 
+//
 //     #[test_case]
 //     fn test_unlock() {
 //         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
 //         let lock_array = array.lock();
 //         assert!(array.is_locked());
-// 
+//
 //         drop(lock_array);
 //         assert!(!array.is_locked());
 //     }
