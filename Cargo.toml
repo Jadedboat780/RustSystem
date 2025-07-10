@@ -35,7 +35,7 @@ vga = { path = "crates/vga" }
 
 [package]
 name = "rust-system"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 
 [dependencies]
