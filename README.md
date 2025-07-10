@@ -1,7 +1,7 @@
 # Rust System - minimal 64-bit kernel for x86 architecture on Rust
 ![Rust](https://img.shields.io/badge/rust-1.89.0_nightly-orange.svg)
 
-<video width="480" controls autoplay muted loop src="example.mp4"></video>
+![Loading](example.gif)
 
 **Rust System** is an educational project aimed at exploring systems programming by building a simple operating system kernel in Rust for the x86_64 architecture. The project does not have a final production goal — it’s primarily a learning exercise.
 Current version: `0.0.2`
