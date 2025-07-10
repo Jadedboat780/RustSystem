@@ -35,3 +35,9 @@ impl ColorCode {
         self.0 = (foreground as u8) | (self.0 & 0xF0);
     }
 }
+
+impl From<u64> for ColorCode {
+    fn from(code: u64) -> Self {
+        ColorCode(code as u8)
+    }
+}

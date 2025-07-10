@@ -72,12 +72,18 @@ impl Writer {
         }
     }
 
-    pub fn write_at(&mut self, row: usize, col: usize, byte: u8) {
+    pub fn write_byte_at(&mut self, row: usize, col: usize, byte: u8, color_code: ColorCode) {
         if row < BUFFER_HEIGHT && col < BUFFER_WIDTH {
             self.buffer.chars[row][col].write(ScreenChar {
                 ascii_character: byte,
-                color_code: self.color_code,
+                color_code,
             });
+        }
+    }
+
+    pub fn write_string_at(&mut self, row: usize, col: usize, s: &str, color_code: ColorCode) {
+        for (i, byte) in s.bytes().enumerate() {
+            self.write_byte_at(row, col + i, byte, color_code);
         }
     }
 
