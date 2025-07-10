@@ -1,5 +1,5 @@
 use super::hlt_loop;
-use crate::{keyboard::print_scancode, println};
+use crate::{keyboard::print_scancode, println, syscalls::syscall_entry};
 use core::{ops::IndexMut, sync::atomic::Ordering};
 use custom_types::spin_lock::SpinLock;
 use datetime::{CURRENT_TIME, TICKS};
@@ -22,11 +22,14 @@ lazy_static! {
             idt.double_fault
                 .set_handler_fn(double_fault_handler)
                 .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
+            idt.index_mut(0x80)
+                .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as u64));
         }
         idt.index_mut(InterruptIndex::Timer.as_u8())
             .set_handler_fn(timer_interrupt_handler);
         idt.index_mut(InterruptIndex::Keyboard.as_u8())
             .set_handler_fn(keyboard_interrupt_handler);
+
         idt
     };
 }
