@@ -1,47 +1,53 @@
-# Минимальное  64-битное ядро для архитектуры x86 на Rust </h1>
+# Rust System - minimal 64-bit kernel for x86 architecture on Rust
+![Rust](https://img.shields.io/badge/rust-1.89.0_nightly-orange.svg)
 
-Проект является моей попыткой научиться писать разные системные вещи, поэтому какой-либо конечной цели у проекта нет. Актуальная версия проекта: 0.0.1
+<video width="480" controls autoplay muted loop src="example.mp4"></video>
 
-Запуск происходит с помощью эмулятора QEMU(перед запуском программы заранее проверьте, что он установлен). Перед запуском необходимо выполнить команды:
-```commandline
+**Rust System** is an educational project aimed at exploring systems programming by building a simple operating system kernel in Rust for the x86_64 architecture. The project does not have a final production goal — it’s primarily a learning exercise.
+Current version: `0.0.2`
+
+## Launch
+**Requirements:**
+* [QEMU](https://www.qemu.org/) installed
+* [Rust](https://www.rust-lang.org/tools/install) toolchain
+
+**Setup:**
+```bash
 rustup component add llvm-tools-preview
 cargo install bootimage
-cargo bootimage
 ```
-## Реализовано:
-* минимальная работа с консолью
-* минимальный vga буффер
-* ввод\ввывод с клавиатуры
-* работа с динамической памятью
-* исключения цп
-* тестирование
----
-## Структура проекта:
-* .cargo - папка с конфигурационными данными 
-* src - папка с кодом ядра
-  * custom_types - папка с кастомными обёртками и типами
-    * channel.rs - реализация канала(ещё очень сырая, не предназначена для использования)
-    * list.rs - реализация односвязного списка(ещё очень сырая, не предназначена для использования)
-    * spinlock.rs - реализация спинлока
-  * lib.rs - реализует вспомогательные функции
-  * main.rs - сборка проекта
-  * allocator.rs - реализует аллокатор, чтобы работать с динамической памятью
-  * gdt.rs - содержит отдельный стек двойных ошибок в таблице стека прерываний
-  * interrupts.rs - реализация стека прерываний
-  * memory.rs - реализует управление физической памятью и создание отображений страниц виртуальной памяти на физическую память
-  * serial.rs - реализация последовательного порта (необходимо для тестов)
-  * vga - реализация минимального VGA буфера
-  * spin_lock.rs - реализация простой обёртки для монопольного доступа к данным
-* test - папка с тестами
-    * basic_boot.rs - тестирование функций
-    * heap_allocation.rs - тестирование работы аллокатора
-    * should_panic.rs - тестирование вызовов паники
-    * stack_overflow.rs - тестирование переполнения стека
-* Cargo.toml -  зависимости проекта
-* rust-toolchain - указывает версию языка (ночную)
-* x86_64-os.json - инструкции для сборки системы
-## Для создания проекта использовался материал из:
+
+**Build and run:**
+```bash
+cargo bootimage
+cargo run --release
+```
+
+## Features
+Implemented so far:
+* VGA‑based primitive terminal & cli commands 
+* Serial port output for debugging
+* Interrupt handling (keyboard and PIT timer)
+* Virtual memory management using page tables & frame allocator
+* Dynamic heap allocator
+* CPU exception handling with TSS/double-fault stack
+* Datetime system
+* System calls
+* Kernel-level testing framework
+* Integration with `bootloader` and `bootimage`
+
+## Educational materials:
 * [Writing an OS in Rust](https://os.phil-opp.com)
 * [Rust Atomics and Locks](https://marabos.nl/atomics/)
-* [Rust Design Patterns](https://rust-unofficial.github.io/patterns/intro.html)
-* [Learn Rust With Entirely Too Many Linked Lists](https://rust-unofficial.github.io/too-many-lists/index.html)
+* Creating your kernel on rust [1](https://habr.com/ru/articles/920554/), [2](https://habr.com/ru/articles/921500/)
+
+## Notes
+RustSystem is a work-in-progress and intended primarily for learning. The codebase, structure, and features are subject to change as the project evolves.
+Contributions, suggestions, and issues are welcome!
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+You are free to use, modify, and distribute this software for personal, educational, or commercial purposes, provided the license terms are met.
+
