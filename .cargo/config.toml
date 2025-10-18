@@ -7,6 +7,3 @@ target = "x86_64-os.json"
 
 [target.'cfg(target_os = "none")']
 runner = "bootimage runner"
-
-[toolchain]
-channel = "nightly-2024-06-01"
