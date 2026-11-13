@@ -11,8 +11,8 @@ pub extern "C" fn syscall_handler(
     arg2: u64,
     arg3: u64,
     arg4: u64,
-    arg5: u64,
-    arg6: u64,
+    _arg5: u64,
+    _arg6: u64,
 ) -> u64 {
     match num {
         0 => {
@@ -57,7 +57,6 @@ pub extern "C" fn syscall_handler(
 
 global_asm!(
     r#"
-    .att_syntax
 .globl syscall_entry
 .text
 syscall_entry:
@@ -97,7 +96,8 @@ syscall_entry:
 
     iretq
 
-"#
+"#,
+    options(att_syntax)
 );
 
 unsafe extern "C" {

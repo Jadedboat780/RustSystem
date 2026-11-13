@@ -1,4 +1,4 @@
-use crate::{WRITER, print, commands::Command};
+use crate::{WRITER, commands::Command, print};
 use alloc::string::String;
 use core::ops::DerefMut;
 use custom_types::spin_lock::SpinLock;

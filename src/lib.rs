@@ -97,18 +97,26 @@ pub fn print_logo(row: usize, col: usize) {
     for _ in 0..5 {
         for i in 0..dots.len() {
             for (j, _) in dots.iter().enumerate().take(i + 1) {
-                WRITER.lock().write_byte_at(row, col + j, dots[j], ColorCode::new(Color::Pink, Color::Black));
+                WRITER.lock().write_byte_at(
+                    row,
+                    col + j,
+                    dots[j],
+                    ColorCode::new(Color::Pink, Color::Black),
+                );
             }
 
             datetime::sleep_cycles(500_000_000);
 
             for j in 0..=i {
-                WRITER.lock().write_byte_at(row, col + j, b' ', ColorCode::new(Color::Pink, Color::Black));
+                WRITER.lock().write_byte_at(
+                    row,
+                    col + j,
+                    b' ',
+                    ColorCode::new(Color::Pink, Color::Black),
+                );
             }
         }
     }
-
-    commands::clear();
 }
 
 pub trait Testable {

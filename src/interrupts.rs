@@ -23,7 +23,7 @@ lazy_static! {
                 .set_handler_fn(double_fault_handler)
                 .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
             idt.index_mut(0x80)
-                .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as u64));
+                .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as *const () as u64));
         }
         idt.index_mut(InterruptIndex::Timer.as_u8())
             .set_handler_fn(timer_interrupt_handler);
@@ -44,10 +44,6 @@ pub enum InterruptIndex {
 impl InterruptIndex {
     fn as_u8(self) -> u8 {
         self as u8
-    }
-
-    fn as_usize(self) -> usize {
-        usize::from(self.as_u8())
     }
 }
 
@@ -83,7 +79,7 @@ extern "x86-interrupt" fn double_fault_handler(
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     TICKS.fetch_add(1, Ordering::Relaxed);
 
-    if TICKS.load(Ordering::Relaxed) % 1000 == 0 {
+    if TICKS.load(Ordering::Relaxed).is_multiple_of(1000) {
         let mut time = CURRENT_TIME.lock();
         time.update();
     }
