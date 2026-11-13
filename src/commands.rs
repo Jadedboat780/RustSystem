@@ -1,7 +1,7 @@
 use crate::{WRITER, print, println};
 use alloc::string::{String, ToString};
 use core::arch::asm;
-use datetime::DateTime;
+use kernel_lib::time::DateTime;
 
 pub enum Command {
     Help,

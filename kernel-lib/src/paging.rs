@@ -1,5 +1,3 @@
-#![no_std]
-
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
     PhysAddr, VirtAddr,
@@ -8,6 +6,10 @@ use x86_64::{
     },
 };
 
+/// # Safety
+///
+/// The complete physical memory must be mapped at `physical_memory_offset`,
+/// and this must be called only once to avoid aliasing `&mut` references.
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
     unsafe {
         let level_4_table = active_level_4_table(physical_memory_offset);

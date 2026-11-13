@@ -13,13 +13,17 @@ pub mod interrupts;
 pub mod keyboard;
 pub mod syscalls;
 
-use custom_types::spin_lock::SpinLock;
-use lazy_static::lazy_static;
-use vga::{
-    buffer::Buffer,
-    colors::{Color, ColorCode},
-    writer::Writer,
+use kernel_lib::{
+    gdt, pit,
+    sync::spin_lock::SpinLock,
+    time::sleep_cycles,
+    vga::{
+        buffer::Buffer,
+        colors::{Color, ColorCode},
+        writer::Writer,
+    },
 };
+use lazy_static::lazy_static;
 
 pub fn init() {
     gdt::init();
@@ -105,7 +109,7 @@ pub fn print_logo(row: usize, col: usize) {
                 );
             }
 
-            datetime::sleep_cycles(500_000_000);
+            sleep_cycles(500_000_000);
 
             for j in 0..=i {
                 WRITER.lock().write_byte_at(
@@ -148,7 +152,7 @@ pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
 
 #[cfg(test)]
 use bootloader::{BootInfo, entry_point};
-use serial::{serial_print, serial_println};
+pub use kernel_lib::{serial_print, serial_println};
 
 #[cfg(test)]
 entry_point!(test_kernel_main);

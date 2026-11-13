@@ -1,6 +1,4 @@
-#![no_std]
-
-use custom_types::spin_lock::SpinLock;
+use crate::sync::spin_lock::SpinLock;
 use lazy_static::lazy_static;
 use uart_16550::SerialPort;
 
@@ -25,7 +23,7 @@ pub fn _print(args: ::core::fmt::Arguments) {
 #[macro_export]
 macro_rules! serial_print {
     ($($arg:tt)*) => {
-        $crate::_print(format_args!($($arg)*));
+        $crate::serial::_print(format_args!($($arg)*));
     };
 }
 

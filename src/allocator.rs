@@ -1,7 +1,9 @@
-use allocators::fixed_block::{
-    FixedSizeBlockAllocator, HEAP_SIZE, HEAP_START, LockFixedSizeBlockAllocator,
+use kernel_lib::{
+    heap::fixed_block::{
+        FixedSizeBlockAllocator, HEAP_SIZE, HEAP_START, LockFixedSizeBlockAllocator,
+    },
+    sync::spin_lock::SpinLock,
 };
-use custom_types::spin_lock::SpinLock;
 use x86_64::{
     VirtAddr,
     structures::paging::{

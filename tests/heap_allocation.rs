@@ -13,8 +13,8 @@ use rust_system::allocator::HEAP_SIZE;
 entry_point!(main);
 
 fn main(boot_info: &'static BootInfo) -> ! {
+    use kernel_lib::paging::{self, BootInfoFrameAllocator};
     use rust_system::allocator;
-    use rust_system::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
     rust_system::init();

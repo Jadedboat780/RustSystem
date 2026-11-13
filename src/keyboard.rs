@@ -1,7 +1,7 @@
 use crate::{WRITER, commands::Command, print};
 use alloc::string::String;
 use core::ops::DerefMut;
-use custom_types::spin_lock::SpinLock;
+use kernel_lib::sync::spin_lock::SpinLock;
 
 const ENTER: u8 = 0x1C;
 const BACKSPACE: u8 = 0x0E;

@@ -1,5 +1,3 @@
-#![no_std]
-
 use x86_64::instructions::port::Port;
 
 pub fn init() {

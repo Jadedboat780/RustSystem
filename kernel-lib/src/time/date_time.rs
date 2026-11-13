@@ -1,6 +1,6 @@
+use crate::sync::spin_lock::SpinLock;
 use alloc::format;
 use alloc::string::String;
-use custom_types::spin_lock::SpinLock;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DateTime {

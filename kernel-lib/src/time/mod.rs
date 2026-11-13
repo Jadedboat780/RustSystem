@@ -1,6 +1,3 @@
-#![no_std]
-extern crate alloc;
-
 mod date_time;
 use core::sync::atomic::AtomicUsize;
 pub use date_time::*;

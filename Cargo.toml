@@ -1,14 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/allocators",
-    "crates/custom-types",
-    "crates/datetime",
-    "crates/gdt",
-    "crates/memory",
-    "crates/pit",
-    "crates/serial",
-    "crates/vga",
+    "kernel-lib",
 ]
 
 [workspace.package]
@@ -24,14 +17,7 @@ pic8259 = "0.10.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 
 # custom crates
-allocators = { path = "crates/allocators" }
-custom-types = { path = "crates/custom-types" }
-datetime = { path = "crates/datetime" }
-gdt = { path = "crates/gdt" }
-memory = { path = "crates/memory" }
-pit = { path = "crates/pit" }
-serial = { path = "crates/serial" }
-vga = { path = "crates/vga" }
+kernel-lib = { path = "kernel-lib" }
 
 [package]
 name = "rust-system"
@@ -44,16 +30,7 @@ x86_64.workspace = true
 volatile.workspace = true
 pic8259.workspace = true
 lazy_static.workspace = true
-
-allocators.workspace = true
-custom-types.workspace = true
-datetime.workspace = true
-gdt.workspace = true
-memory.workspace = true
-pit.workspace = true
-serial.workspace = true
-vga.workspace = true
-
+kernel-lib.workspace = true
 
 [profile.release]
 panic = "abort"

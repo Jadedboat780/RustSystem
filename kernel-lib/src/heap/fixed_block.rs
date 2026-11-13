@@ -1,6 +1,6 @@
+use crate::sync::spin_lock::SpinLock;
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::{mem, ptr};
-use custom_types::spin_lock::SpinLock;
 
 const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048];
 pub const HEAP_START: usize = 0x_4444_4444_0000;
@@ -35,6 +35,9 @@ impl FixedSizeBlockAllocator {
         }
     }
 
+    /// # Safety
+    ///
+    /// The heap bounds must be valid and unused. Call this only once.
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         unsafe {
             self.fallback_allocator.init(heap_start, heap_size);

@@ -1,8 +1,11 @@
 use super::hlt_loop;
 use crate::{keyboard::print_scancode, println, syscalls::syscall_entry};
 use core::{ops::IndexMut, sync::atomic::Ordering};
-use custom_types::spin_lock::SpinLock;
-use datetime::{CURRENT_TIME, TICKS};
+use kernel_lib::{
+    gdt::DOUBLE_FAULT_IST_INDEX,
+    sync::spin_lock::SpinLock,
+    time::{CURRENT_TIME, TICKS},
+};
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
@@ -21,7 +24,7 @@ lazy_static! {
         unsafe {
             idt.double_fault
                 .set_handler_fn(double_fault_handler)
-                .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
+                .set_stack_index(DOUBLE_FAULT_IST_INDEX);
             idt.index_mut(0x80)
                 .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as *const () as u64));
         }

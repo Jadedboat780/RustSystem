@@ -1,8 +1,10 @@
 use crate::WRITER;
-use allocators::fixed_block::HEAP_SIZE;
 use core::{arch::global_asm, sync::atomic::Ordering};
-use datetime::TICKS;
-use vga::colors::{Color, ColorCode};
+use kernel_lib::{
+    heap::fixed_block::HEAP_SIZE,
+    time::TICKS,
+    vga::colors::{Color, ColorCode},
+};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn syscall_handler(

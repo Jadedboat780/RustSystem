@@ -7,7 +7,10 @@
 extern crate alloc;
 
 use bootloader::{BootInfo, entry_point};
-use datetime::DateTime;
+use kernel_lib::{
+    paging::{self, BootInfoFrameAllocator},
+    time::DateTime,
+};
 use rust_system::{allocator::init_heap, print};
 use x86_64::VirtAddr;
 
@@ -18,8 +21,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     rust_system::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = memory::BootInfoFrameAllocator::init(&boot_info.memory_map);
+    let mut mapper = unsafe { paging::init(phys_mem_offset) };
+    let mut frame_allocator = BootInfoFrameAllocator::init(&boot_info.memory_map);
 
     init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
 
