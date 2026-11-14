@@ -1,13 +1,10 @@
-use crate::sync::spin_lock::SpinLock;
-use lazy_static::lazy_static;
+use crate::sync::{Lazy, SpinLock};
 use uart_16550::{Config, Uart16550Tty, backend::PioBackend};
 
-lazy_static! {
-    pub static ref SERIAL: SpinLock<Uart16550Tty<PioBackend>> = {
-        let serial_port = unsafe { Uart16550Tty::new_port(0x3F8, Config::default()) }.expect("Serial port initialization failed");
-        SpinLock::new(serial_port)
-    };
-}
+pub static SERIAL: Lazy<SpinLock<Uart16550Tty<PioBackend>>> = Lazy::new(|| {
+    let serial_port = unsafe { Uart16550Tty::new_port(0x3F8, Config::default()) }.expect("Serial port initialization failed");
+    SpinLock::new(serial_port)
+});
 
 #[doc(hidden)]
 pub fn _print(args: ::core::fmt::Arguments) {

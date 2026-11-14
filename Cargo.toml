@@ -15,7 +15,6 @@ linked_list_allocator = "0.9.0"
 x86_64 = "0.15.5"
 uart_16550 = "0.6.0"
 pic8259 = "0.11.0"
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 kernel-lib = { path = "kernel-lib" }
 
 [package]
@@ -27,7 +26,6 @@ edition = "2024"
 bootloader_api.workspace = true
 x86_64.workspace = true
 pic8259.workspace = true
-lazy_static.workspace = true
 kernel-lib.workspace = true
 
 [profile.release]

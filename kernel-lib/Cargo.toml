@@ -12,6 +12,5 @@ doctest = false
 bootloader_api.workspace = true
 embedded-graphics.workspace = true
 x86_64.workspace = true
-lazy_static.workspace = true
 linked_list_allocator.workspace = true
 uart_16550.workspace = true

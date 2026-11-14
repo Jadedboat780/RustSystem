@@ -3,10 +3,9 @@ use crate::{keyboard::print_scancode, println, syscalls::syscall_entry};
 use core::{ops::IndexMut, sync::atomic::Ordering};
 use kernel_lib::{
     gdt::DOUBLE_FAULT_IST_INDEX,
-    sync::spin_lock::SpinLock,
+    sync::{Lazy, SpinLock},
     time::{CURRENT_TIME, TICKS},
 };
-use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
@@ -15,26 +14,24 @@ const PIC_2_OFFSET: u8 = 40;
 
 pub static PICS: SpinLock<ChainedPics> = SpinLock::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
-lazy_static! {
-    static ref IDT: InterruptDescriptorTable = {
-        let mut idt = InterruptDescriptorTable::new();
-        idt.breakpoint.set_handler_fn(breakpoint_handler);
-        idt.page_fault.set_handler_fn(page_fault_handler);
-        unsafe {
-            idt.double_fault
-                .set_handler_fn(double_fault_handler)
-                .set_stack_index(DOUBLE_FAULT_IST_INDEX);
-            idt.index_mut(0x80)
-                .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as *const () as u64));
-        }
-        idt.index_mut(InterruptIndex::Timer.as_u8())
-            .set_handler_fn(timer_interrupt_handler);
-        idt.index_mut(InterruptIndex::Keyboard.as_u8())
-            .set_handler_fn(keyboard_interrupt_handler);
+static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
+    let mut idt = InterruptDescriptorTable::new();
+    idt.breakpoint.set_handler_fn(breakpoint_handler);
+    idt.page_fault.set_handler_fn(page_fault_handler);
+    unsafe {
+        idt.double_fault
+            .set_handler_fn(double_fault_handler)
+            .set_stack_index(DOUBLE_FAULT_IST_INDEX);
+        idt.index_mut(0x80)
+            .set_handler_addr(x86_64::VirtAddr::new(syscall_entry as *const () as u64));
+    }
+    idt.index_mut(InterruptIndex::Timer.as_u8())
+        .set_handler_fn(timer_interrupt_handler);
+    idt.index_mut(InterruptIndex::Keyboard.as_u8())
+        .set_handler_fn(keyboard_interrupt_handler);
 
-        idt
-    };
-}
+    idt
+});
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
