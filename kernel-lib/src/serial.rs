@@ -4,8 +4,7 @@ use uart_16550::{Config, Uart16550Tty, backend::PioBackend};
 
 lazy_static! {
     pub static ref SERIAL: SpinLock<Uart16550Tty<PioBackend>> = {
-        let serial_port = unsafe { Uart16550Tty::new_port(0x3F8, Config::default()) }
-            .expect("Serial port initialization failed");
+        let serial_port = unsafe { Uart16550Tty::new_port(0x3F8, Config::default()) }.expect("Serial port initialization failed");
         SpinLock::new(serial_port)
     };
 }
@@ -14,10 +13,7 @@ lazy_static! {
 pub fn _print(args: ::core::fmt::Arguments) {
     use core::fmt::Write;
 
-    SERIAL
-        .lock()
-        .write_fmt(args)
-        .expect("Printing to serial failed");
+    SERIAL.lock().write_fmt(args).expect("Printing to serial failed");
 }
 
 #[macro_export]

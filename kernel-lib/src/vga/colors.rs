@@ -51,8 +51,6 @@ impl TryFrom<u64> for ColorCode {
     type Error = InvalidColorCode;
 
     fn try_from(code: u64) -> Result<Self, Self::Error> {
-        u8::try_from(code)
-            .map(ColorCode)
-            .map_err(|_| InvalidColorCode)
+        u8::try_from(code).map(ColorCode).map_err(|_| InvalidColorCode)
     }
 }

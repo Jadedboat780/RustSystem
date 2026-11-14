@@ -55,15 +55,7 @@ impl TryFrom<u64> for Syscall {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn syscall_handler(
-    num: u64,
-    arg1: u64,
-    arg2: u64,
-    arg3: u64,
-    arg4: u64,
-    arg5: u64,
-    _arg6: u64,
-) -> i64 {
+extern "C" fn syscall_handler(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64, arg5: u64, _arg6: u64) -> i64 {
     let Ok(syscall) = Syscall::try_from(num) else {
         return -ENOSYS;
     };
@@ -233,18 +225,12 @@ fn test_syscall_preserves_registers() {
             inlateout("r11") 88u64 => r11,
         );
     }
-    assert_eq!(
-        (rdi, rsi, rdx, rcx, r8, r9, r10, r11),
-        (11, 22, 33, 44, 55, 66, 77, 88)
-    );
+    assert_eq!((rdi, rsi, rdx, rcx, r8, r9, r10, r11), (11, 22, 33, 44, 55, 66, 77, 88));
 }
 
 #[test_case]
 fn test_write_char() {
-    assert_eq!(
-        syscall(Syscall::WriteChar, [5, 3, b'X' as u64, TEST_COLOR, 0]),
-        0
-    );
+    assert_eq!(syscall(Syscall::WriteChar, [5, 3, b'X' as u64, TEST_COLOR, 0]), 0);
     let ch = WRITER.lock().char_at(3, 5).unwrap();
     assert_eq!(ch.ascii_character, b'X');
     assert_eq!(ch.color_code, ColorCode::try_from(TEST_COLOR).unwrap());

@@ -1,9 +1,7 @@
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
 use x86_64::{
     PhysAddr, VirtAddr,
-    structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB,
-    },
+    structures::paging::{FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB},
 };
 
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
@@ -27,11 +25,7 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
     }
 }
 
-pub fn create_example_mapping(
-    page: Page,
-    mapper: &mut OffsetPageTable,
-    frame_allocator: &mut impl FrameAllocator<Size4KiB>,
-) {
+pub fn create_example_mapping(page: Page, mapper: &mut OffsetPageTable, frame_allocator: &mut impl FrameAllocator<Size4KiB>) {
     use x86_64::structures::paging::PageTableFlags as Flags;
 
     let frame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
@@ -56,10 +50,7 @@ pub struct BootInfoFrameAllocator {
 
 impl BootInfoFrameAllocator {
     pub fn init(memory_regions: &'static MemoryRegions) -> Self {
-        BootInfoFrameAllocator {
-            memory_regions,
-            next: 0,
-        }
+        BootInfoFrameAllocator { memory_regions, next: 0 }
     }
 
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {

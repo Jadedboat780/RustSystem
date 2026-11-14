@@ -1,19 +1,14 @@
 use kernel_lib::{
-    heap::fixed_block::{
-        FixedSizeBlockAllocator, HEAP_SIZE, HEAP_START, LockFixedSizeBlockAllocator,
-    },
+    heap::fixed_block::{FixedSizeBlockAllocator, HEAP_SIZE, HEAP_START, LockFixedSizeBlockAllocator},
     sync::spin_lock::SpinLock,
 };
 use x86_64::{
     VirtAddr,
-    structures::paging::{
-        FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError,
-    },
+    structures::paging::{FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError},
 };
 
 #[global_allocator]
-static ALLOCATOR: LockFixedSizeBlockAllocator =
-    LockFixedSizeBlockAllocator(SpinLock::new(FixedSizeBlockAllocator::new()));
+static ALLOCATOR: LockFixedSizeBlockAllocator = LockFixedSizeBlockAllocator(SpinLock::new(FixedSizeBlockAllocator::new()));
 
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
@@ -28,9 +23,7 @@ pub fn init_heap(
     };
 
     for page in page_range {
-        let frame = frame_allocator
-            .allocate_frame()
-            .ok_or(MapToError::FrameAllocationFailed)?;
+        let frame = frame_allocator.allocate_frame().ok_or(MapToError::FrameAllocationFailed)?;
         let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
         unsafe { mapper.map_to(page, frame, flags, frame_allocator)?.flush() };
     }

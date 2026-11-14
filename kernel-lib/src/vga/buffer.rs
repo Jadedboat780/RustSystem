@@ -23,8 +23,7 @@ pub struct ScreenChar {
 pub const BUFFER_HEIGHT: usize = 25;
 pub const BUFFER_WIDTH: usize = 80;
 
-const FONTS: [&MonoFont<'static>; 5] =
-    [&FONT_10X20, &FONT_9X18, &FONT_8X13, &FONT_7X14, &FONT_6X10];
+const FONTS: [&MonoFont<'static>; 5] = [&FONT_10X20, &FONT_9X18, &FONT_8X13, &FONT_7X14, &FONT_6X10];
 
 /// The 16 standard VGA text-mode colors as RGB
 const PALETTE: [Rgb888; 16] = [
@@ -133,10 +132,7 @@ impl Display {
         let fg = PALETTE[ch.color_code.foreground() as usize];
         let bg = PALETTE[ch.color_code.background() as usize];
         let cell = self.cell();
-        let top_left = Point::new(
-            (col as u32 * cell.width) as i32,
-            (row as u32 * cell.height) as i32,
-        );
+        let top_left = Point::new((col as u32 * cell.width) as i32, (row as u32 * cell.height) as i32);
 
         let byte = [ch.ascii_character];
         let _ = match core::str::from_utf8(&byte) {
@@ -184,10 +180,7 @@ impl Display {
 impl OriginDimensions for Display {
     fn size(&self) -> Size {
         let cell = self.cell();
-        Size::new(
-            cell.width * BUFFER_WIDTH as u32,
-            cell.height * BUFFER_HEIGHT as u32,
-        )
+        Size::new(cell.width * BUFFER_WIDTH as u32, cell.height * BUFFER_HEIGHT as u32)
     }
 }
 
@@ -216,10 +209,7 @@ impl DrawTarget for Display {
 }
 
 fn cell_size(font: &MonoFont) -> Size {
-    Size::new(
-        font.character_size.width + font.character_spacing,
-        font.character_size.height,
-    )
+    Size::new(font.character_size.width + font.character_spacing, font.character_size.height)
 }
 
 fn choose_font(info: &FrameBufferInfo) -> (&'static MonoFont<'static>, usize) {

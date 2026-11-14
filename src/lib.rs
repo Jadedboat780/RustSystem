@@ -86,8 +86,7 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
-pub static WRITER: SpinLock<Writer> =
-    SpinLock::new(Writer::new(0, ColorCode::new(Color::Pink, Color::Black)));
+pub static WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(0, ColorCode::new(Color::Pink, Color::Black)));
 
 pub fn print_logo(row: usize, col: usize) {
     const ASCII_LOGO: &str = r"
@@ -105,23 +104,17 @@ pub fn print_logo(row: usize, col: usize) {
     for _ in 0..5 {
         for i in 0..dots.len() {
             for (j, _) in dots.iter().enumerate().take(i + 1) {
-                WRITER.lock().write_byte_at(
-                    row,
-                    col + j,
-                    dots[j],
-                    ColorCode::new(Color::Pink, Color::Black),
-                );
+                WRITER
+                    .lock()
+                    .write_byte_at(row, col + j, dots[j], ColorCode::new(Color::Pink, Color::Black));
             }
 
             sleep_cycles(500_000_000);
 
             for j in 0..=i {
-                WRITER.lock().write_byte_at(
-                    row,
-                    col + j,
-                    b' ',
-                    ColorCode::new(Color::Pink, Color::Black),
-                );
+                WRITER
+                    .lock()
+                    .write_byte_at(row, col + j, b' ', ColorCode::new(Color::Pink, Color::Black));
             }
         }
     }
