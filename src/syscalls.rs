@@ -82,8 +82,8 @@ syscall_entry:
     mov 24(%rsp), %r9    // 6-й аргумент (опц.)
 
     // Calling the handler
-    mov $syscall_handler, %rax
-    call *%rax
+    // PC-relative call: the kernel is position-independent
+    call syscall_handler
 
     // Restore registers
     pop %r11

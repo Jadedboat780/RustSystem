@@ -1,0 +1,11 @@
+[package]
+name = "boot"
+version = "0.1.0"
+edition = "2024"
+description = "Builds UEFI/BIOS disk images from the kernel ELF and runs them in QEMU"
+
+[workspace]
+
+[dependencies]
+bootloader = "0.11.17"
+ovmf-prebuilt = "0.2.9"

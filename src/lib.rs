@@ -13,23 +13,32 @@ pub mod interrupts;
 pub mod keyboard;
 pub mod syscalls;
 
+use bootloader_api::{BootloaderConfig, config::Mapping};
 use kernel_lib::{
     gdt, pit,
     sync::spin_lock::SpinLock,
     time::sleep_cycles,
     vga::{
-        buffer::Buffer,
         colors::{Color, ColorCode},
         writer::Writer,
     },
 };
-use lazy_static::lazy_static;
+
+pub const BOOTLOADER_CONFIG: BootloaderConfig = {
+    let mut config = BootloaderConfig::new_default();
+    config.mappings.physical_memory = Some(Mapping::Dynamic);
+    config
+};
 
 pub fn init() {
     gdt::init();
     pit::init();
     interrupts::init_idt();
-    unsafe { interrupts::PICS.lock().initialize() };
+    unsafe {
+        let mut pics = interrupts::PICS.lock();
+        pics.initialize();
+        pics.write_masks(0b1111_1100, 0b1111_1111);
+    }
     x86_64::instructions::interrupts::enable();
 }
 
@@ -77,13 +86,8 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
-lazy_static! {
-    pub static ref WRITER: SpinLock<Writer> = SpinLock::new(Writer::new(
-        0,
-        ColorCode::new(Color::Pink, Color::Black),
-        unsafe { &mut *(0xb8000 as *mut Buffer) }
-    ));
-}
+pub static WRITER: SpinLock<Writer> =
+    SpinLock::new(Writer::new(0, ColorCode::new(Color::Pink, Color::Black)));
 
 pub fn print_logo(row: usize, col: usize) {
     const ASCII_LOGO: &str = r"
@@ -151,14 +155,14 @@ pub fn test_panic_handler(info: &core::panic::PanicInfo) -> ! {
 }
 
 #[cfg(test)]
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, entry_point};
 pub use kernel_lib::{serial_print, serial_println};
 
 #[cfg(test)]
-entry_point!(test_kernel_main);
+entry_point!(test_kernel_main, config = &BOOTLOADER_CONFIG);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();

@@ -3,20 +3,19 @@ resolver = "3"
 members = [
     "kernel-lib",
 ]
+exclude = ["boot"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
-bootloader = { version = "0.9", features = ["map_physical_memory"] }
+bootloader_api = "0.11.17"
+embedded-graphics = "0.8.2"
 linked_list_allocator = "0.9.0"
-volatile = "0.2.6"
 x86_64 = "0.15.5"
 uart_16550 = "0.6.0"
 pic8259 = "0.11.0"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
-
-# custom crates
 kernel-lib = { path = "kernel-lib" }
 
 [package]
@@ -25,9 +24,8 @@ version = "0.0.2"
 edition = "2024"
 
 [dependencies]
-bootloader.workspace = true
+bootloader_api.workspace = true
 x86_64.workspace = true
-volatile.workspace = true
 pic8259.workspace = true
 lazy_static.workspace = true
 kernel-lib.workspace = true
@@ -44,15 +42,3 @@ harness = false
 [[test]]
 name = "stack_overflow"
 harness = false
-
-[package.metadata.bootimage]
-test-args = [
-    "-device",
-    "isa-debug-exit,iobase=0xf4,iosize=0x04",
-    "-serial",
-    "stdio",
-    "-display",
-    "none",
-]
-test-success-exit-code = 33
-test-timeout = 5

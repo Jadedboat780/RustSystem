@@ -27,6 +27,14 @@ impl ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 
+    pub const fn foreground(self) -> u8 {
+        self.0 & 0x0F
+    }
+
+    pub const fn background(self) -> u8 {
+        self.0 >> 4
+    }
+
     pub fn set_background(&mut self, background: Color) {
         self.0 |= (background as u8) << 4;
     }

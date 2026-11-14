@@ -2,21 +2,30 @@ use super::{
     buffer::{BUFFER_HEIGHT, BUFFER_WIDTH, Buffer, ScreenChar},
     colors::{Color, ColorCode},
 };
+use bootloader_api::info::FrameBuffer;
 use core::fmt;
 
 pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
-    buffer: &'static mut Buffer,
+    buffer: Buffer,
 }
 
 impl Writer {
-    pub fn new(column_position: usize, color_code: ColorCode, buffer: &'static mut Buffer) -> Self {
+    pub const fn new(column_position: usize, color_code: ColorCode) -> Self {
         Self {
             column_position,
             color_code,
-            buffer,
+            buffer: Buffer::new(color_code),
         }
+    }
+
+    pub fn attach_framebuffer(&mut self, framebuffer: &'static mut FrameBuffer) {
+        self.buffer.attach(framebuffer);
+    }
+
+    pub fn char_at(&self, row: usize, col: usize) -> Option<ScreenChar> {
+        (row < BUFFER_HEIGHT && col < BUFFER_WIDTH).then(|| self.buffer.read(row, col))
     }
 
     pub fn set_color_code(&mut self, new_code: Color) {
@@ -28,12 +37,7 @@ impl Writer {
     }
 
     pub fn new_line(&mut self) {
-        for row in 1..BUFFER_HEIGHT {
-            for col in 0..BUFFER_WIDTH {
-                let character = self.buffer.chars[row][col].read();
-                self.buffer.chars[row - 1][col].write(character);
-            }
-        }
+        self.buffer.scroll_up();
         self.clear_row(BUFFER_HEIGHT - 1);
         self.column_position = 0;
     }
@@ -48,7 +52,7 @@ impl Writer {
             color_code: self.color_code,
         };
         for col in 0..BUFFER_WIDTH {
-            self.buffer.chars[row][col].write(blank);
+            self.buffer.write(row, col, blank);
         }
     }
 
@@ -63,10 +67,14 @@ impl Writer {
                 let row = BUFFER_HEIGHT - 1;
                 let col = self.column_position;
 
-                self.buffer.chars[row][col].write(ScreenChar {
-                    ascii_character: byte,
-                    color_code: self.color_code,
-                });
+                self.buffer.write(
+                    row,
+                    col,
+                    ScreenChar {
+                        ascii_character: byte,
+                        color_code: self.color_code,
+                    },
+                );
                 self.column_position += 1;
             }
         }
@@ -74,10 +82,14 @@ impl Writer {
 
     pub fn write_byte_at(&mut self, row: usize, col: usize, byte: u8, color_code: ColorCode) {
         if row < BUFFER_HEIGHT && col < BUFFER_WIDTH {
-            self.buffer.chars[row][col].write(ScreenChar {
-                ascii_character: byte,
-                color_code,
-            });
+            self.buffer.write(
+                row,
+                col,
+                ScreenChar {
+                    ascii_character: byte,
+                    color_code,
+                },
+            );
         }
     }
 
@@ -101,10 +113,14 @@ impl Writer {
             let row = BUFFER_HEIGHT - 1;
             let col = self.column_position;
 
-            self.buffer.chars[row][col].write(ScreenChar {
-                ascii_character: b' ',
-                color_code: self.color_code,
-            });
+            self.buffer.write(
+                row,
+                col,
+                ScreenChar {
+                    ascii_character: b' ',
+                    color_code: self.color_code,
+                },
+            );
         }
     }
 
@@ -123,20 +139,19 @@ impl fmt::Write for Writer {
     }
 }
 
-// #[test_case]
-// fn test_println_output() {
-//     use core::fmt::Write;
-//     use x86_64::instructions::interrupts;
-//     use crate::buffer::BUFFER_HEIGHT;
-//
-//     let s = "Some test string that fits on a single line";
-//     interrupts::without_interrupts(|| {
-//         let mut writer = WRITER.lock();
-//         writeln!(writer, "\n{}", s).expect("writeln failed");
-//         for (i, c) in s.chars().enumerate() {
-//             let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
-//             assert_eq!(char::from(screen_char.ascii_character), c);
-//         }
-//     });
-// }
-//
+#[test_case]
+fn test_println_output() {
+    use crate::buffer::BUFFER_HEIGHT;
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
+    let s = "Some test string that fits on a single line";
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    });
+}

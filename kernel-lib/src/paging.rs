@@ -1,4 +1,4 @@
-use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
+use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
 use x86_64::{
     PhysAddr, VirtAddr,
     structures::paging::{
@@ -6,10 +6,6 @@ use x86_64::{
     },
 };
 
-/// # Safety
-///
-/// The complete physical memory must be mapped at `physical_memory_offset`,
-/// and this must be called only once to avoid aliasing `&mut` references.
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
     unsafe {
         let level_4_table = active_level_4_table(physical_memory_offset);
@@ -54,22 +50,22 @@ unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
 }
 
 pub struct BootInfoFrameAllocator {
-    memory_map: &'static MemoryMap,
+    memory_regions: &'static MemoryRegions,
     next: usize,
 }
 
 impl BootInfoFrameAllocator {
-    pub fn init(memory_map: &'static MemoryMap) -> Self {
+    pub fn init(memory_regions: &'static MemoryRegions) -> Self {
         BootInfoFrameAllocator {
-            memory_map,
+            memory_regions,
             next: 0,
         }
     }
 
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
-        let regions = self.memory_map.iter();
-        let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
-        let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
+        let regions = self.memory_regions.iter();
+        let usable_regions = regions.filter(|r| r.kind == MemoryRegionKind::Usable);
+        let addr_ranges = usable_regions.map(|r| r.start..r.end);
         let frame_addresses = addr_ranges.flat_map(|r| r.step_by(4096));
 
         frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))

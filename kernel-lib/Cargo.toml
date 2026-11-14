@@ -3,10 +3,15 @@ name = "kernel-lib"
 version = "0.1.0"
 edition.workspace = true
 
+[lib]
+# no_std crate: the standard test harness cannot be built for it
+test = false
+doctest = false
+
 [dependencies]
-bootloader.workspace = true
+bootloader_api.workspace = true
+embedded-graphics.workspace = true
 x86_64.workspace = true
-volatile.workspace = true
 lazy_static.workspace = true
 linked_list_allocator.workspace = true
 uart_16550.workspace = true

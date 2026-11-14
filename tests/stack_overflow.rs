@@ -2,13 +2,15 @@
 #![no_main]
 #![feature(abi_x86_interrupt)]
 
+use bootloader_api::{BootInfo, entry_point};
 use kernel_lib::gdt::{self, DOUBLE_FAULT_IST_INDEX};
 use lazy_static::lazy_static;
 use rust_system::{QemuExitCode, exit_qemu, serial_print, serial_println};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
-#[unsafe(no_mangle)]
-fn _start() -> ! {
+entry_point!(main);
+
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     serial_print!("stack_overflow::stack_overflow...\t");
 
     gdt::init();
@@ -21,7 +23,7 @@ fn _start() -> ! {
 #[allow(unconditional_recursion)]
 fn stack_overflow() {
     stack_overflow();
-    volatile::Volatile::new(0).read();
+    unsafe { core::ptr::read_volatile(&0) };
 }
 
 lazy_static! {

@@ -4,10 +4,12 @@
 #![test_runner(rust_system::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+use bootloader_api::{BootInfo, entry_point};
 use rust_system::println;
 
-#[unsafe(no_mangle)]
-fn _start() -> ! {
+entry_point!(main);
+
+fn main(_boot_info: &'static mut BootInfo) -> ! {
     test_main();
     loop {}
 }
