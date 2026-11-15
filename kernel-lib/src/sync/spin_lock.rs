@@ -1,9 +1,11 @@
-use core::cell::UnsafeCell;
-use core::fmt;
-use core::ops::{Deref, DerefMut};
-use core::sync::atomic::{
-    AtomicBool,
-    Ordering::{Acquire, Release},
+use core::{
+    cell::UnsafeCell,
+    fmt,
+    ops::{Deref, DerefMut},
+    sync::atomic::{
+        AtomicBool,
+        Ordering::{Acquire, Relaxed, Release},
+    },
 };
 
 pub struct SpinLock<T> {
@@ -22,8 +24,10 @@ impl<T> SpinLock<T> {
 
     #[inline]
     pub fn lock(&self) -> Guard<'_, T> {
-        while self.locked.swap(true, Acquire) {
-            core::hint::spin_loop();
+        while self.locked.compare_exchange_weak(false, true, Acquire, Relaxed).is_err() {
+            while self.locked.load(Relaxed) {
+                core::hint::spin_loop();
+            }
         }
 
         Guard { lock: self }
@@ -31,11 +35,10 @@ impl<T> SpinLock<T> {
 
     #[inline]
     pub fn try_lock(&self) -> Option<Guard<'_, T>> {
-        if !self.locked.swap(true, Acquire) {
-            Some(Guard { lock: self })
-        } else {
-            None
-        }
+        self.locked
+            .compare_exchange(false, true, Acquire, Relaxed)
+            .is_ok()
+            .then_some(Guard { lock: self })
     }
 
     #[inline]
@@ -49,8 +52,13 @@ impl<T> SpinLock<T> {
     }
 
     #[inline]
+    pub unsafe fn force_unlock(&self) {
+        self.unlock();
+    }
+
+    #[inline]
     pub fn is_locked(&self) -> bool {
-        self.locked.load(Acquire)
+        self.locked.load(Relaxed)
     }
 
     #[inline]
@@ -75,13 +83,16 @@ impl<T: Default> Default for SpinLock<T> {
 
 impl<T: fmt::Debug> fmt::Debug for SpinLock<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SpinLock")
-            .field("locked", &self.locked)
-            .field("value", unsafe { &*self.value.get() })
-            .finish()
+        let mut d = f.debug_struct("SpinLock");
+        match self.try_lock() {
+            Some(guard) => d.field("value", &*guard),
+            None => d.field("value", &format_args!("<locked>")),
+        };
+        d.finish_non_exhaustive()
     }
 }
 
+#[must_use = "if unused the SpinLock will immediately unlock"]
 pub struct Guard<'lock, T> {
     lock: &'lock SpinLock<T>,
 }
@@ -89,9 +100,7 @@ pub struct Guard<'lock, T> {
 unsafe impl<T: Sync> Sync for Guard<'_, T> {}
 impl<T: fmt::Debug> fmt::Debug for Guard<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Guard")
-            .field("value", unsafe { &*self.lock.value.get() })
-            .finish()
+        f.debug_struct("Guard").field("value", &**self).finish()
     }
 }
 
@@ -118,37 +127,3 @@ impl<T> Drop for Guard<'_, T> {
         self.lock.unlock()
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//
-//     #[test_case]
-//     fn test_lock() {
-//         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
-//         assert!(!array.is_locked());
-//
-//         let _lock_array = array.lock();
-//         assert!(array.is_locked())
-//     }
-//
-//     #[test_case]
-//     fn test_try_lock() {
-//         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
-//         let lock_array_1 = array.try_lock();
-//         assert!(lock_array_1.is_some());
-//
-//         let lock_array_2 = array.try_lock();
-//         assert!(lock_array_2.is_none())
-//     }
-//
-//     #[test_case]
-//     fn test_unlock() {
-//         let array: SpinLock<[i32; 5]> = SpinLock::new([1, 2, 3, 4, 5]);
-//         let lock_array = array.lock();
-//         assert!(array.is_locked());
-//
-//         drop(lock_array);
-//         assert!(!array.is_locked());
-//     }
-// }
