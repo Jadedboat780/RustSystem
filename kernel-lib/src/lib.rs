@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+pub mod console;
 pub mod gdt;
 pub mod heap;
 pub mod paging;

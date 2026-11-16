@@ -39,9 +39,7 @@ impl<T, F> Lazy<T, F> {
     pub const fn new(f: F) -> Self {
         Self {
             state: AtomicU8::new(UNINIT),
-            data: UnsafeCell::new(Data {
-                f: ManuallyDrop::new(f),
-            }),
+            data: UnsafeCell::new(Data { f: ManuallyDrop::new(f) }),
         }
     }
 

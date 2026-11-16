@@ -8,9 +8,13 @@ edition.workspace = true
 test = false
 doctest = false
 
+[lints]
+workspace = true
+
 [dependencies]
 bootloader_api.workspace = true
 embedded-graphics.workspace = true
 x86_64.workspace = true
 linked_list_allocator.workspace = true
 uart_16550.workspace = true
+log.workspace = true

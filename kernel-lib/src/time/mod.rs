@@ -2,7 +2,7 @@ mod date_time;
 mod instant;
 pub mod rtc;
 
-pub use date_time::{DateTime, DateDisplay, TimeDisplay, TimeError, Weekday};
+pub use date_time::{DateDisplay, DateTime, TimeDisplay, TimeError, Weekday};
 pub use instant::Instant;
 
 use crate::pit;
@@ -22,7 +22,11 @@ static TICKS: AtomicU64 = AtomicU64::new(0);
 static BOOT_UNIX: AtomicU64 = AtomicU64::new(0);
 
 pub fn init() {
-    set(rtc::read().unwrap_or(FALLBACK_TIME));
+    let time = rtc::read().unwrap_or_else(|error| {
+        log::warn!("RTC returned an invalid time ({error}), using {FALLBACK_TIME}");
+        FALLBACK_TIME
+    });
+    set(time);
 }
 
 #[inline]

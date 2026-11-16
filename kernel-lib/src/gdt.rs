@@ -3,22 +3,31 @@ use x86_64::{
     VirtAddr,
     structures::{
         gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
+        paging::{Mapper, Page, Size4KiB, mapper::UnmapError},
         tss::TaskStateSegment,
     },
 };
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
+const PAGE_SIZE: usize = 4096;
+const IST_STACK_SIZE: usize = PAGE_SIZE * 5;
+
+#[repr(C, align(4096))]
+struct IstStack {
+    guard: [u8; PAGE_SIZE],
+    stack: [u8; IST_STACK_SIZE],
+}
+
+static mut DOUBLE_FAULT_STACK: IstStack = IstStack {
+    guard: [0; PAGE_SIZE],
+    stack: [0; IST_STACK_SIZE],
+};
+
 static TSS: Lazy<TaskStateSegment> = Lazy::new(|| {
     let mut tss = TaskStateSegment::new();
-    tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
-        const STACK_SIZE: usize = 4096 * 5;
-        static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
-
-        let stack_start = VirtAddr::from_ptr(&raw const STACK);
-
-        stack_start + STACK_SIZE as u64
-    };
+    let stack_start = VirtAddr::from_ptr(unsafe { &raw const DOUBLE_FAULT_STACK.stack });
+    tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = stack_start + IST_STACK_SIZE as u64;
     tss
 });
 
@@ -57,4 +66,14 @@ pub fn init() {
         SS::set_reg(GDT.1.data_selector);
         load_tss(GDT.1.tss_selector);
     }
+}
+
+pub fn double_fault_guard_page() -> Page {
+    Page::containing_address(VirtAddr::from_ptr(unsafe { &raw const DOUBLE_FAULT_STACK.guard }))
+}
+
+pub fn protect_stacks(mapper: &mut impl Mapper<Size4KiB>) -> Result<(), UnmapError> {
+    let (_, flush) = mapper.unmap(double_fault_guard_page())?;
+    flush.flush();
+    Ok(())
 }

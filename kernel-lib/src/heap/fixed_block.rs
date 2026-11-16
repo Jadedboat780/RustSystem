@@ -1,4 +1,4 @@
-use crate::sync::spin_lock::SpinLock;
+use crate::sync::IrqSpinLock;
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::{mem, ptr};
 
@@ -40,7 +40,7 @@ impl FixedSizeBlockAllocator {
     /// The heap bounds must be valid and unused. Call this only once.
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         unsafe {
-            self.fallback_allocator.init(heap_start, heap_size);
+            self.fallback_allocator.init(heap_start as *mut u8, heap_size);
         }
     }
 
@@ -52,7 +52,7 @@ impl FixedSizeBlockAllocator {
     }
 }
 
-pub struct LockFixedSizeBlockAllocator(pub SpinLock<FixedSizeBlockAllocator>);
+pub struct LockFixedSizeBlockAllocator(pub IrqSpinLock<FixedSizeBlockAllocator>);
 
 unsafe impl GlobalAlloc for LockFixedSizeBlockAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {

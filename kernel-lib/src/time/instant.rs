@@ -27,7 +27,9 @@ impl Instant {
 
     #[inline]
     pub fn checked_add(&self, duration: Duration) -> Option<Instant> {
-        self.ticks.checked_add(duration_to_ticks(duration)).map(|ticks| Self { ticks })
+        self.ticks
+            .checked_add(duration_to_ticks(duration))
+            .map(|ticks| Self { ticks })
     }
 }
 
