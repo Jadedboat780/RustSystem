@@ -10,4 +10,3 @@ pub mod pit;
 pub mod serial;
 pub mod sync;
 pub mod time;
-pub mod vga;
