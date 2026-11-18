@@ -1,10 +1,15 @@
 use super::hlt_loop;
-use crate::{keyboard::print_scancode, println, syscalls::syscall_entry};
-use core::{ops::IndexMut, sync::atomic::Ordering};
+use crate::{
+    keyboard::{handle_serial_byte, print_scancode},
+    println,
+    syscalls::syscall_entry,
+};
+use core::ops::IndexMut;
 use kernel_lib::{
     gdt::DOUBLE_FAULT_IST_INDEX,
-    sync::{Lazy, SpinLock},
-    time::{CURRENT_TIME, TICKS},
+    serial,
+    sync::{IrqSpinLock, Lazy},
+    time,
 };
 use pic8259::ChainedPics;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
@@ -12,7 +17,7 @@ use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, Pag
 const PIC_1_OFFSET: u8 = 32;
 const PIC_2_OFFSET: u8 = 40;
 
-pub static PICS: SpinLock<ChainedPics> = SpinLock::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+pub static PICS: IrqSpinLock<ChainedPics> = IrqSpinLock::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
 static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let mut idt = InterruptDescriptorTable::new();
@@ -29,6 +34,8 @@ static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
         .set_handler_fn(timer_interrupt_handler);
     idt.index_mut(InterruptIndex::Keyboard.as_u8())
         .set_handler_fn(keyboard_interrupt_handler);
+    idt.index_mut(InterruptIndex::Serial.as_u8())
+        .set_handler_fn(serial_interrupt_handler);
 
     idt
 });
@@ -38,6 +45,7 @@ static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET,
     Keyboard = PIC_1_OFFSET + 1,
+    Serial = PIC_1_OFFSET + 4,
 }
 
 impl InterruptIndex {
@@ -70,12 +78,7 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    TICKS.fetch_add(1, Ordering::Relaxed);
-
-    if TICKS.load(Ordering::Relaxed).is_multiple_of(1000) {
-        let mut time = CURRENT_TIME.lock();
-        time.update();
-    }
+    time::tick();
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
@@ -91,6 +94,16 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
+    }
+}
+
+extern "x86-interrupt" fn serial_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    while let Some(byte) = serial::read_byte() {
+        handle_serial_byte(byte);
+    }
+
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Serial.as_u8());
     }
 }
 

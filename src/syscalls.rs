@@ -9,14 +9,11 @@
 //! All other registers are preserved
 
 use crate::WRITER;
-use core::{arch::global_asm, sync::atomic::Ordering};
+use core::arch::global_asm;
 use kernel_lib::{
+    console::{COLUMNS, ColorCode, ROWS},
     heap::fixed_block::HEAP_SIZE,
-    time::TICKS,
-    vga::{
-        buffer::{BUFFER_HEIGHT, BUFFER_WIDTH},
-        colors::ColorCode,
-    },
+    time,
 };
 
 /// Invalid argument
@@ -24,7 +21,7 @@ pub const EINVAL: i64 = 22;
 /// Unknown syscall number
 pub const ENOSYS: i64 = 38;
 /// Longest string accepted by [`Syscall::WriteStr`]: one screen row
-pub const MAX_WRITE_LEN: usize = BUFFER_WIDTH;
+pub const MAX_WRITE_LEN: usize = COLUMNS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u64)]
@@ -62,7 +59,7 @@ extern "C" fn syscall_handler(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u
     let result = match syscall {
         Syscall::WriteChar => write_char(arg1, arg2, arg3, arg4),
         Syscall::WriteStr => write_str(arg1, arg2, arg3, arg4, arg5),
-        Syscall::GetTicks => Ok(TICKS.load(Ordering::Relaxed) as i64),
+        Syscall::GetTicks => Ok(time::ticks() as i64),
         Syscall::HeapSize => Ok(HEAP_SIZE as i64),
     };
     result.unwrap_or_else(|errno| -errno)
@@ -71,7 +68,7 @@ extern "C" fn syscall_handler(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u
 /// Checks screen coordinates and converts them to `(row, col)`
 fn position(col: u64, row: u64) -> Result<(usize, usize), i64> {
     let (row, col) = (row as usize, col as usize);
-    if row < BUFFER_HEIGHT && col < BUFFER_WIDTH {
+    if row < ROWS && col < COLUMNS {
         Ok((row, col))
     } else {
         Err(EINVAL)
@@ -86,7 +83,7 @@ fn write_char(col: u64, row: u64, byte: u64, color_code: u64) -> Result<i64, i64
     let (row, col) = position(col, row)?;
     let byte = u8::try_from(byte).map_err(|_| EINVAL)?;
     let color_code = color(color_code)?;
-    WRITER.lock().write_byte_at(row, col, byte, color_code);
+    WRITER.lock().write_byte_at(row, col, byte, color_code).map_err(|_| EINVAL)?;
     Ok(0)
 }
 
@@ -99,8 +96,11 @@ fn write_str(col: u64, row: u64, ptr: u64, len: u64, color_code: u64) -> Result<
     }
     let bytes = unsafe { core::slice::from_raw_parts(ptr as *const u8, len) };
     let text = core::str::from_utf8(bytes).map_err(|_| EINVAL)?;
-    WRITER.lock().write_string_at(row, col, text, color_code);
-    Ok(len as i64)
+    let written = WRITER
+        .lock()
+        .write_string_at(row, col, text, color_code)
+        .map_err(|_| EINVAL)?;
+    Ok(written as i64)
 }
 
 global_asm!(
@@ -253,8 +253,8 @@ fn test_write_rejects_invalid_arguments() {
     let ptr = text.as_ptr() as u64;
     #[rustfmt::skip]
     let invalid = [
-        (Syscall::WriteChar, [BUFFER_WIDTH as u64, 0, b'a' as u64, TEST_COLOR, 0]), // column
-        (Syscall::WriteChar, [0, BUFFER_HEIGHT as u64, b'a' as u64, TEST_COLOR, 0]), // row
+        (Syscall::WriteChar, [COLUMNS as u64, 0, b'a' as u64, TEST_COLOR, 0]),      // column
+        (Syscall::WriteChar, [0, ROWS as u64, b'a' as u64, TEST_COLOR, 0]),         // row
         (Syscall::WriteChar, [0, 0, 0x100, TEST_COLOR, 0]),                         // byte
         (Syscall::WriteChar, [0, 0, b'a' as u64, 0x100, 0]),                        // color
         (Syscall::WriteStr, [0, 0, ptr, text.len() as u64, TEST_COLOR]),            // too long

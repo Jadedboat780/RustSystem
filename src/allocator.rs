@@ -1,6 +1,6 @@
 use kernel_lib::{
     heap::fixed_block::{FixedSizeBlockAllocator, HEAP_SIZE, HEAP_START, LockFixedSizeBlockAllocator},
-    sync::spin_lock::SpinLock,
+    sync::IrqSpinLock,
 };
 use x86_64::{
     VirtAddr,
@@ -8,7 +8,7 @@ use x86_64::{
 };
 
 #[global_allocator]
-static ALLOCATOR: LockFixedSizeBlockAllocator = LockFixedSizeBlockAllocator(SpinLock::new(FixedSizeBlockAllocator::new()));
+static ALLOCATOR: LockFixedSizeBlockAllocator = LockFixedSizeBlockAllocator(IrqSpinLock::new(FixedSizeBlockAllocator::new()));
 
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
