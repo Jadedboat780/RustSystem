@@ -13,21 +13,10 @@ use kernel_lib::heap::fixed_block::HEAP_SIZE;
 entry_point!(main, config = &rust_system::BOOTLOADER_CONFIG);
 
 fn main(boot_info: &'static mut BootInfo) -> ! {
-    use kernel_lib::paging::{self, BootInfoFrameAllocator};
-    use rust_system::allocator;
-    use x86_64::VirtAddr;
-
-    rust_system::init();
-    let phys_mem_offset = boot_info
-        .physical_memory_offset
-        .into_option()
-        .expect("Bootloader did not map physical memory");
-    let mut mapper = unsafe { paging::init(VirtAddr::new(phys_mem_offset)) };
-    let mut frame_allocator = BootInfoFrameAllocator::init(&boot_info.memory_regions);
-    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    rust_system::Kernel::init(boot_info);
 
     test_main();
-    loop {}
+    rust_system::hlt_loop()
 }
 
 #[test_case]
